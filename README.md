@@ -1,1 +1,2 @@
 # netx
+基于reactor的网络库，简化版的netty，主要数据接口参考了netty，并直接调用了netty的工具类
