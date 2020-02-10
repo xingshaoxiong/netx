@@ -1,5 +1,6 @@
 package io.netx.net;
 
+import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
 
 public class DefaultChannelHandlerContext implements ChannelHandlerContext {
@@ -13,23 +14,44 @@ public class DefaultChannelHandlerContext implements ChannelHandlerContext {
         this.pipeline = pipeline;
     }
 
+
     @Override
-    public void channelActive(ChannelHandlerContext ctx) {
+    public ChannelInboundInvoker fireChannelActive() {
+        return null;
+    }
+
+    @Override
+    public ChannelInboundInvoker fireChannelInactive() {
+        return null;
+    }
+
+    @Override
+    public ChannelInboundInvoker fireChannelRead(Object msg) {
+        return null;
+    }
+
+    @Override
+    public void bind(SocketAddress localAddress) {
 
     }
 
     @Override
-    public void channelInActive(ChannelHandlerContext ctx) {
+    public void connect(SocketAddress remoteAddress, SocketAddress localAddress) {
 
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+    public void close() {
 
     }
 
     @Override
-    public void write(ChannelHandlerContext ctx, Object msg) {
+    public ChannelOutboundInvoker read() {
+        return null;
+    }
+
+    @Override
+    public void write(Object msg) {
 
     }
 }

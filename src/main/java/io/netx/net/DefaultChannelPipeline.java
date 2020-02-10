@@ -3,7 +3,7 @@ package io.netx.net;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
-import java.nio.channels.Channel;
+import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
 
 public class DefaultChannelPipeline implements ChannelPipeline {
@@ -26,9 +26,6 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         tail = new TailContext(channel, eventLoop, this);
     }
 
-
-
-
     @Override
     public ChannelPipeline addLast(Handler handler) {
         return null;
@@ -40,29 +37,51 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) {
+    public ChannelInboundInvoker fireChannelActive() {
+        return null;
+    }
+
+    @Override
+    public ChannelInboundInvoker fireChannelInactive() {
+        return null;
+    }
+
+    @Override
+    public ChannelInboundInvoker fireChannelRead(Object msg) {
+        return null;
+    }
+
+    @Override
+    public void bind(SocketAddress localAddress) {
 
     }
 
     @Override
-    public void channelInActive(ChannelHandlerContext ctx) {
+    public void connect(SocketAddress remoteAddress, SocketAddress localAddress) {
 
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+    public void close() {
 
     }
 
     @Override
-    public void write(ChannelHandlerContext ctx, Object msg) {
+    public ChannelOutboundInvoker read() {
+        return null;
+    }
+
+    @Override
+    public void write(Object msg) {
 
     }
 
-    final class TailContext extends DefaultChannelHandlerContext{
+
+    final class TailContext extends DefaultChannelHandlerContext implements ChannelInboundHandler {
         public TailContext(SocketChannel channel, EventLoop eventLoop, ChannelPipeline pipeline) {
             super(channel, eventLoop, pipeline);
         }
+
 
         @Override
         public void channelActive(ChannelHandlerContext ctx) {
@@ -78,19 +97,15 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
 
         }
-
-        @Override
-        public void write(ChannelHandlerContext ctx, Object msg) {
-
-        }
     }
 
-    final class HeadContext extends DefaultChannelHandlerContext{
+    final class HeadContext extends DefaultChannelHandlerContext implements ChannelOutboundHandler, ChannelInboundHandler {
 
         public HeadContext(SocketChannel channel, EventLoop eventLoop, ChannelPipeline pipeline) {
             super(channel, eventLoop, pipeline);
         }
 
+
         @Override
         public void channelActive(ChannelHandlerContext ctx) {
 
@@ -103,6 +118,26 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
+
+        }
+
+        @Override
+        public void bind(ChannelHandlerContext ctx, SocketAddress localAddress) throws Exception {
+
+        }
+
+        @Override
+        public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress) throws Exception {
+
+        }
+
+        @Override
+        public void close(ChannelHandlerContext ctx) throws Exception {
+
+        }
+
+        @Override
+        public void read(ChannelHandlerContext ctx) throws Exception {
 
         }
 

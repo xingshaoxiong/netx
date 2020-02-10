@@ -1,6 +1,6 @@
 package io.netx.net;
 
-public class InBoundHandlerAdapter implements InBoundHandler {
+public class ChannelInBoundHandlerAdapter implements ChannelInboundHandler {
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
 
@@ -12,7 +12,7 @@ public class InBoundHandlerAdapter implements InBoundHandler {
     }
 
     @Override
-    public void channelWrite(ChannelHandlerContext ctx, Object msg) {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
 
     }
 }
