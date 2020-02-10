@@ -15,7 +15,7 @@
  */
 package io.netx.channel;
 
-import io.netx.buffer.ByteBuf;
+import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 

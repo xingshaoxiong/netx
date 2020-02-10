@@ -49,6 +49,4 @@ public interface ChannelFuture extends Future<Void> {
 
     @Override
     ChannelFuture awaitUninterruptibly();
-
-    boolean isVoid();
 }

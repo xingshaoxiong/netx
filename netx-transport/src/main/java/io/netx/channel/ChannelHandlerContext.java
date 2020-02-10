@@ -15,8 +15,8 @@
  */
 package io.netx.channel;
 
-import io.netx.buffer.ByteBuf;
-import io.netx.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.AttributeMap;
@@ -49,19 +49,10 @@ public interface ChannelHandlerContext extends AttributeMap, ChannelInboundInvok
     ChannelHandlerContext fireChannelInactive();
 
     @Override
-    ChannelHandlerContext fireExceptionCaught(Throwable cause);
-
-    @Override
-    ChannelHandlerContext fireUserEventTriggered(Object evt);
-
-    @Override
     ChannelHandlerContext fireChannelRead(Object msg);
 
     @Override
     ChannelHandlerContext fireChannelReadComplete();
-
-    @Override
-    ChannelHandlerContext fireChannelWritabilityChanged();
 
     @Override
     ChannelHandlerContext read();

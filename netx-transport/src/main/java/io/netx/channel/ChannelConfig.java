@@ -15,7 +15,7 @@
  */
 package io.netx.channel;
 
-import io.netx.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufAllocator;
 import io.netx.channel.socket.SocketChannelConfig;
 
 import java.nio.ByteBuffer;
@@ -24,47 +24,7 @@ import java.util.Map;
 
 public interface ChannelConfig {
 
-    Map<ChannelOption<?>, Object> getOptions();
 
-    /**
-     * Sets the configuration properties from the specified {@link Map}.
-     */
-    boolean setOptions(Map<ChannelOption<?>, ?> options);
-
-    /**
-     * Return the value of the given {@link ChannelOption}
-     */
-    <T> T getOption(ChannelOption<T> option);
-
-    /**
-     * Sets a configuration property with the specified name and value.
-     * To override this method properly, you must call the super class:
-     * <pre>
-     * public boolean setOption(ChannelOption&lt;T&gt; option, T value) {
-     *     if (super.setOption(option, value)) {
-     *         return true;
-     *     }
-     *
-     *     if (option.equals(additionalOption)) {
-     *         ....
-     *         return true;
-     *     }
-     *
-     *     return false;
-     * }
-     * </pre>
-     *
-     * @return {@code true} if and only if the property has been set
-     */
-    <T> boolean setOption(ChannelOption<T> option, T value);
-
-    /**
-     * Returns the connect timeout of the channel in milliseconds.  If the
-     * {@link Channel} does not support connect operation, this property is not
-     * used at all, and therefore will be ignored.
-     *
-     * @return the connect timeout in milliseconds.  {@code 0} if disabled.
-     */
     int getConnectTimeoutMillis();
 
     /**
@@ -211,15 +171,4 @@ public interface ChannelConfig {
      */
     ChannelConfig setMessageSizeEstimator(MessageSizeEstimator estimator);
 
-    /**
-     * Returns the {@link WriteBufferWaterMark} which is used for setting the high and low
-     * water mark of the write buffer.
-     */
-    WriteBufferWaterMark getWriteBufferWaterMark();
-
-    /**
-     * Set the {@link WriteBufferWaterMark} which is used for setting the high and low
-     * water mark of the write buffer.
-     */
-    ChannelConfig setWriteBufferWaterMark(WriteBufferWaterMark writeBufferWaterMark);
 }

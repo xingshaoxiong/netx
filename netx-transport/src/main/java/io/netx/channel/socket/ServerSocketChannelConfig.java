@@ -16,7 +16,6 @@
 package io.netx.channel.socket;
 
 import io.netx.buffer.ByteBufAllocator;
-import io.netx.channel.ChannelConfig;
 import io.netx.channel.MessageSizeEstimator;
 import io.netx.channel.RecvByteBufAllocator;
 import io.netx.channel.WriteBufferWaterMark;

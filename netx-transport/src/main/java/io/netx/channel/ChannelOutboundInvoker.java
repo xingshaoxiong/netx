@@ -39,8 +39,6 @@ public interface ChannelOutboundInvoker {
 
     ChannelOutboundInvoker flush();
 
-    ChannelFuture writeAndFlush(Object msg, ChannelPromise promise);
-
     ChannelPromise newPromise();
 
 }

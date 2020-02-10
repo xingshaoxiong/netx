@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 The Netty Project
+ * Copyright 2012 The Netty Project
  *
  * The Netty Project licenses this file to you under the Apache License,
  * version 2.0 (the "License"); you may not use this file except in compliance
@@ -15,17 +15,11 @@
  */
 package io.netx.channel;
 
-public interface ChannelInboundInvoker {
+import io.netx.channel.Channel;
+import io.netx.channel.EventLoopGroup;
+import io.netty.util.concurrent.OrderedEventExecutor;
 
-    ChannelInboundInvoker fireChannelRegistered();
-
-    ChannelInboundInvoker fireChannelUnregistered();
-
-    ChannelInboundInvoker fireChannelActive();
-
-    ChannelInboundInvoker fireChannelInactive();
-
-    ChannelInboundInvoker fireChannelRead(Object msg);
-
-    ChannelInboundInvoker fireChannelReadComplete();
+public interface EventLoop extends OrderedEventExecutor, EventLoopGroup {
+    @Override
+    EventLoopGroup parent();
 }

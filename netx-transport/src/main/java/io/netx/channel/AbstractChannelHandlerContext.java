@@ -15,7 +15,7 @@
  */
 package io.netx.channel;
 
-import io.netx.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.ReferenceCountUtil;
@@ -43,22 +43,13 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
     private static final AtomicIntegerFieldUpdater<AbstractChannelHandlerContext> HANDLER_STATE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(AbstractChannelHandlerContext.class, "handlerState");
 
-    /**
-     * {@link ChannelHandler#handlerAdded(ChannelHandlerContext)} is about to be called.
-     */
+
     private static final int ADD_PENDING = 1;
-    /**
-     * {@link ChannelHandler#handlerAdded(ChannelHandlerContext)} was called.
-     */
+
     private static final int ADD_COMPLETE = 2;
-    /**
-     * {@link ChannelHandler#handlerRemoved(ChannelHandlerContext)} was called.
-     */
+
     private static final int REMOVE_COMPLETE = 3;
-    /**
-     * Neither {@link ChannelHandler#handlerAdded(ChannelHandlerContext)}
-     * nor {@link ChannelHandler#handlerRemoved(ChannelHandlerContext)} was called.
-     */
+
     private static final int INIT = 0;
 
     private final DefaultChannelPipeline pipeline;
@@ -66,13 +57,11 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
     private final boolean ordered;
     private final int executionMask;
 
-    // Will be set to null if no child executor should be used, otherwise it will be set to the
-    // child executor.
+
     final EventExecutor executor;
     private ChannelFuture succeededFuture;
 
-    // Lazily instantiated tasks used to trigger events to a handler with different executor.
-    // There is no need to make this volatile as at worse it will just create a few more instances then needed.
+
     private Tasks invokeTasks;
 
     private volatile int handlerState = INIT;
@@ -83,7 +72,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         this.pipeline = pipeline;
         this.executor = executor;
         this.executionMask = mask(handlerClass);
-        // Its ordered if its driven by the EventLoop or the given Executor is an instanceof OrderedEventExecutor.
+
         ordered = executor == null || executor instanceof OrderedEventExecutor;
     }
 
@@ -244,89 +233,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         }
     }
 
-    @Override
-    public ChannelHandlerContext fireExceptionCaught(final Throwable cause) {
-        invokeExceptionCaught(findContextInbound(MASK_EXCEPTION_CAUGHT), cause);
-        return this;
-    }
 
-    static void invokeExceptionCaught(final AbstractChannelHandlerContext next, final Throwable cause) {
-        ObjectUtil.checkNotNull(cause, "cause");
-        EventExecutor executor = next.executor();
-        if (executor.inEventLoop()) {
-            next.invokeExceptionCaught(cause);
-        } else {
-            try {
-                executor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        next.invokeExceptionCaught(cause);
-                    }
-                });
-            } catch (Throwable t) {
-                if (logger.isWarnEnabled()) {
-                    logger.warn("Failed to submit an exceptionCaught() event.", t);
-                    logger.warn("The exceptionCaught() event that was failed to submit was:", cause);
-                }
-            }
-        }
-    }
-
-    private void invokeExceptionCaught(final Throwable cause) {
-        if (invokeHandler()) {
-            try {
-                handler().exceptionCaught(this, cause);
-            } catch (Throwable error) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(
-                        "An exception {}" +
-                        "was thrown by a user handler's exceptionCaught() " +
-                        "method while handling the following exception:",
-                        ThrowableUtil.stackTraceToString(error), cause);
-                } else if (logger.isWarnEnabled()) {
-                    logger.warn(
-                        "An exception '{}' [enable DEBUG level for full stacktrace] " +
-                        "was thrown by a user handler's exceptionCaught() " +
-                        "method while handling the following exception:", error, cause);
-                }
-            }
-        } else {
-            fireExceptionCaught(cause);
-        }
-    }
-
-    @Override
-    public ChannelHandlerContext fireUserEventTriggered(final Object event) {
-        invokeUserEventTriggered(findContextInbound(MASK_USER_EVENT_TRIGGERED), event);
-        return this;
-    }
-
-    static void invokeUserEventTriggered(final AbstractChannelHandlerContext next, final Object event) {
-        ObjectUtil.checkNotNull(event, "event");
-        EventExecutor executor = next.executor();
-        if (executor.inEventLoop()) {
-            next.invokeUserEventTriggered(event);
-        } else {
-            executor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    next.invokeUserEventTriggered(event);
-                }
-            });
-        }
-    }
-
-    private void invokeUserEventTriggered(Object event) {
-        if (invokeHandler()) {
-            try {
-                ((ChannelInboundHandler) handler()).userEventTriggered(this, event);
-            } catch (Throwable t) {
-                notifyHandlerException(t);
-            }
-        } else {
-            fireUserEventTriggered(event);
-        }
-    }
 
     @Override
     public ChannelHandlerContext fireChannelRead(final Object msg) {
@@ -392,66 +299,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         }
     }
 
-    @Override
-    public ChannelHandlerContext fireChannelWritabilityChanged() {
-        invokeChannelWritabilityChanged(findContextInbound(MASK_CHANNEL_WRITABILITY_CHANGED));
-        return this;
-    }
 
-    static void invokeChannelWritabilityChanged(final AbstractChannelHandlerContext next) {
-        EventExecutor executor = next.executor();
-        if (executor.inEventLoop()) {
-            next.invokeChannelWritabilityChanged();
-        } else {
-            Tasks tasks = next.invokeTasks;
-            if (tasks == null) {
-                next.invokeTasks = tasks = new Tasks(next);
-            }
-            executor.execute(tasks.invokeChannelWritableStateChangedTask);
-        }
-    }
-
-    private void invokeChannelWritabilityChanged() {
-        if (invokeHandler()) {
-            try {
-                ((ChannelInboundHandler) handler()).channelWritabilityChanged(this);
-            } catch (Throwable t) {
-                notifyHandlerException(t);
-            }
-        } else {
-            fireChannelWritabilityChanged();
-        }
-    }
-
-    @Override
-    public ChannelFuture bind(SocketAddress localAddress) {
-        return bind(localAddress, newPromise());
-    }
-
-    @Override
-    public ChannelFuture connect(SocketAddress remoteAddress) {
-        return connect(remoteAddress, newPromise());
-    }
-
-    @Override
-    public ChannelFuture connect(SocketAddress remoteAddress, SocketAddress localAddress) {
-        return connect(remoteAddress, localAddress, newPromise());
-    }
-
-    @Override
-    public ChannelFuture disconnect() {
-        return disconnect(newPromise());
-    }
-
-    @Override
-    public ChannelFuture close() {
-        return close(newPromise());
-    }
-
-    @Override
-    public ChannelFuture deregister() {
-        return deregister(newPromise());
-    }
 
     @Override
     public ChannelFuture bind(final SocketAddress localAddress, final ChannelPromise promise) {
@@ -489,11 +337,6 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
     }
 
     @Override
-    public ChannelFuture connect(SocketAddress remoteAddress, ChannelPromise promise) {
-        return connect(remoteAddress, null, promise);
-    }
-
-    @Override
     public ChannelFuture connect(
             final SocketAddress remoteAddress, final SocketAddress localAddress, final ChannelPromise promise) {
         ObjectUtil.checkNotNull(remoteAddress, "remoteAddress");
@@ -527,45 +370,6 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
             }
         } else {
             connect(remoteAddress, localAddress, promise);
-        }
-    }
-
-    @Override
-    public ChannelFuture disconnect(final ChannelPromise promise) {
-        if (!channel().metadata().hasDisconnect()) {
-            // Translate disconnect to close if the channel has no notion of disconnect-reconnect.
-            // So far, UDP/IP is the only transport that has such behavior.
-            return close(promise);
-        }
-        if (isNotValidPromise(promise, false)) {
-            // cancelled
-            return promise;
-        }
-
-        final AbstractChannelHandlerContext next = findContextOutbound(MASK_DISCONNECT);
-        EventExecutor executor = next.executor();
-        if (executor.inEventLoop()) {
-            next.invokeDisconnect(promise);
-        } else {
-            safeExecute(executor, new Runnable() {
-                @Override
-                public void run() {
-                    next.invokeDisconnect(promise);
-                }
-            }, promise, null, false);
-        }
-        return promise;
-    }
-
-    private void invokeDisconnect(ChannelPromise promise) {
-        if (invokeHandler()) {
-            try {
-                ((ChannelOutboundHandler) handler()).disconnect(this, promise);
-            } catch (Throwable t) {
-                notifyOutboundHandlerException(t, promise);
-            }
-        } else {
-            disconnect(promise);
         }
     }
 
@@ -668,219 +472,6 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         }
     }
 
-    @Override
-    public ChannelFuture write(Object msg) {
-        return write(msg, newPromise());
-    }
-
-    @Override
-    public ChannelFuture write(final Object msg, final ChannelPromise promise) {
-        write(msg, false, promise);
-
-        return promise;
-    }
-
-    void invokeWrite(Object msg, ChannelPromise promise) {
-        if (invokeHandler()) {
-            invokeWrite0(msg, promise);
-        } else {
-            write(msg, promise);
-        }
-    }
-
-    private void invokeWrite0(Object msg, ChannelPromise promise) {
-        try {
-            ((ChannelOutboundHandler) handler()).write(this, msg, promise);
-        } catch (Throwable t) {
-            notifyOutboundHandlerException(t, promise);
-        }
-    }
-
-    @Override
-    public ChannelHandlerContext flush() {
-        final AbstractChannelHandlerContext next = findContextOutbound(MASK_FLUSH);
-        EventExecutor executor = next.executor();
-        if (executor.inEventLoop()) {
-            next.invokeFlush();
-        } else {
-            Tasks tasks = next.invokeTasks;
-            if (tasks == null) {
-                next.invokeTasks = tasks = new Tasks(next);
-            }
-            safeExecute(executor, tasks.invokeFlushTask, channel().voidPromise(), null, false);
-        }
-
-        return this;
-    }
-
-    private void invokeFlush() {
-        if (invokeHandler()) {
-            invokeFlush0();
-        } else {
-            flush();
-        }
-    }
-
-    private void invokeFlush0() {
-        try {
-            ((ChannelOutboundHandler) handler()).flush(this);
-        } catch (Throwable t) {
-            notifyHandlerException(t);
-        }
-    }
-
-    @Override
-    public ChannelFuture writeAndFlush(Object msg, ChannelPromise promise) {
-        write(msg, true, promise);
-        return promise;
-    }
-
-    void invokeWriteAndFlush(Object msg, ChannelPromise promise) {
-        if (invokeHandler()) {
-            invokeWrite0(msg, promise);
-            invokeFlush0();
-        } else {
-            writeAndFlush(msg, promise);
-        }
-    }
-
-    private void write(Object msg, boolean flush, ChannelPromise promise) {
-        ObjectUtil.checkNotNull(msg, "msg");
-        try {
-            if (isNotValidPromise(promise, true)) {
-                ReferenceCountUtil.release(msg);
-                // cancelled
-                return;
-            }
-        } catch (RuntimeException e) {
-            ReferenceCountUtil.release(msg);
-            throw e;
-        }
-
-        final AbstractChannelHandlerContext next = findContextOutbound(flush ?
-                (MASK_WRITE | MASK_FLUSH) : MASK_WRITE);
-        final Object m = pipeline.touch(msg, next);
-        EventExecutor executor = next.executor();
-        if (executor.inEventLoop()) {
-            if (flush) {
-                next.invokeWriteAndFlush(m, promise);
-            } else {
-                next.invokeWrite(m, promise);
-            }
-        } else {
-            final WriteTask task = WriteTask.newInstance(next, m, promise, flush);
-            if (!safeExecute(executor, task, promise, m, !flush)) {
-                // We failed to submit the WriteTask. We need to cancel it so we decrement the pending bytes
-                // and put it back in the Recycler for re-use later.
-                //
-                // See https://github.com/netty/netty/issues/8343.
-                task.cancel();
-            }
-        }
-    }
-
-    @Override
-    public ChannelFuture writeAndFlush(Object msg) {
-        return writeAndFlush(msg, newPromise());
-    }
-
-    private static void notifyOutboundHandlerException(Throwable cause, ChannelPromise promise) {
-        // Only log if the given promise is not of type VoidChannelPromise as tryFailure(...) is expected to return
-        // false.
-        PromiseNotificationUtil.tryFailure(promise, cause, promise instanceof VoidChannelPromise ? null : logger);
-    }
-
-    private void notifyHandlerException(Throwable cause) {
-        if (inExceptionCaught(cause)) {
-            if (logger.isWarnEnabled()) {
-                logger.warn(
-                        "An exception was thrown by a user handler " +
-                                "while handling an exceptionCaught event", cause);
-            }
-            return;
-        }
-
-        invokeExceptionCaught(cause);
-    }
-
-    private static boolean inExceptionCaught(Throwable cause) {
-        do {
-            StackTraceElement[] trace = cause.getStackTrace();
-            if (trace != null) {
-                for (StackTraceElement t : trace) {
-                    if (t == null) {
-                        break;
-                    }
-                    if ("exceptionCaught".equals(t.getMethodName())) {
-                        return true;
-                    }
-                }
-            }
-
-            cause = cause.getCause();
-        } while (cause != null);
-
-        return false;
-    }
-
-    @Override
-    public ChannelPromise newPromise() {
-        return new DefaultChannelPromise(channel(), executor());
-    }
-
-    @Override
-    public ChannelProgressivePromise newProgressivePromise() {
-        return new DefaultChannelProgressivePromise(channel(), executor());
-    }
-
-    @Override
-    public ChannelFuture newSucceededFuture() {
-        ChannelFuture succeededFuture = this.succeededFuture;
-        if (succeededFuture == null) {
-            this.succeededFuture = succeededFuture = new SucceededChannelFuture(channel(), executor());
-        }
-        return succeededFuture;
-    }
-
-    @Override
-    public ChannelFuture newFailedFuture(Throwable cause) {
-        return new FailedChannelFuture(channel(), executor(), cause);
-    }
-
-    private boolean isNotValidPromise(ChannelPromise promise, boolean allowVoidPromise) {
-        ObjectUtil.checkNotNull(promise, "promise");
-
-        if (promise.isDone()) {
-            // Check if the promise was cancelled and if so signal that the processing of the operation
-            // should not be performed.
-            //
-            // See https://github.com/netty/netty/issues/2349
-            if (promise.isCancelled()) {
-                return true;
-            }
-            throw new IllegalArgumentException("promise already done: " + promise);
-        }
-
-        if (promise.channel() != channel()) {
-            throw new IllegalArgumentException(String.format(
-                    "promise.channel does not match: %s (expected: %s)", promise.channel(), channel()));
-        }
-
-        if (promise.getClass() == DefaultChannelPromise.class) {
-            return false;
-        }
-
-        if (!allowVoidPromise && promise instanceof VoidChannelPromise) {
-            throw new IllegalArgumentException(
-                    StringUtil.simpleClassName(VoidChannelPromise.class) + " not allowed for this operation");
-        }
-
-        if (promise instanceof AbstractChannel.CloseFuture) {
-            throw new IllegalArgumentException(
-                    StringUtil.simpleClassName(AbstractChannel.CloseFuture.class) + " not allowed in a pipeline");
-        }
-        return false;
-    }
 
     private AbstractChannelHandlerContext findContextInbound(int mask) {
         AbstractChannelHandlerContext ctx = this;
@@ -896,11 +487,6 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
             ctx = ctx.prev;
         } while ((ctx.executionMask & mask) == 0);
         return ctx;
-    }
-
-    @Override
-    public ChannelPromise voidPromise() {
-        return channel().voidPromise();
     }
 
     final void setRemoved() {
@@ -1007,92 +593,6 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return StringUtil.simpleClassName(ChannelHandlerContext.class) + '(' + name + ", " + channel() + ')';
     }
 
-    static final class WriteTask implements Runnable {
-        private static final ObjectPool<WriteTask> RECYCLER = ObjectPool.newPool(new ObjectCreator<WriteTask>() {
-            @Override
-            public WriteTask newObject(Handle<WriteTask> handle) {
-                return new WriteTask(handle);
-            }
-        });
-
-        static WriteTask newInstance(AbstractChannelHandlerContext ctx,
-                Object msg, ChannelPromise promise, boolean flush) {
-            WriteTask task = RECYCLER.get();
-            init(task, ctx, msg, promise, flush);
-            return task;
-        }
-
-        private static final boolean ESTIMATE_TASK_SIZE_ON_SUBMIT =
-                SystemPropertyUtil.getBoolean("io.netty.transport.estimateSizeOnSubmit", true);
-
-        // Assuming compressed oops, 12 bytes obj header, 4 ref fields and one int field
-        private static final int WRITE_TASK_OVERHEAD =
-                SystemPropertyUtil.getInt("io.netty.transport.writeTaskSizeOverhead", 32);
-
-        private final Handle<WriteTask> handle;
-        private AbstractChannelHandlerContext ctx;
-        private Object msg;
-        private ChannelPromise promise;
-        private int size; // sign bit controls flush
-
-        @SuppressWarnings("unchecked")
-        private WriteTask(Handle<? extends WriteTask> handle) {
-            this.handle = (Handle<WriteTask>) handle;
-        }
-
-        protected static void init(WriteTask task, AbstractChannelHandlerContext ctx,
-                                   Object msg, ChannelPromise promise, boolean flush) {
-            task.ctx = ctx;
-            task.msg = msg;
-            task.promise = promise;
-
-            if (ESTIMATE_TASK_SIZE_ON_SUBMIT) {
-                task.size = ctx.pipeline.estimatorHandle().size(msg) + WRITE_TASK_OVERHEAD;
-                ctx.pipeline.incrementPendingOutboundBytes(task.size);
-            } else {
-                task.size = 0;
-            }
-            if (flush) {
-                task.size |= Integer.MIN_VALUE;
-            }
-        }
-
-        @Override
-        public void run() {
-            try {
-                decrementPendingOutboundBytes();
-                if (size >= 0) {
-                    ctx.invokeWrite(msg, promise);
-                } else {
-                    ctx.invokeWriteAndFlush(msg, promise);
-                }
-            } finally {
-                recycle();
-            }
-        }
-
-        void cancel() {
-            try {
-                decrementPendingOutboundBytes();
-            } finally {
-                recycle();
-            }
-        }
-
-        private void decrementPendingOutboundBytes() {
-            if (ESTIMATE_TASK_SIZE_ON_SUBMIT) {
-                ctx.pipeline.decrementPendingOutboundBytes(size & Integer.MAX_VALUE);
-            }
-        }
-
-        private void recycle() {
-            // Set to null so the GC can collect them directly
-            ctx = null;
-            msg = null;
-            promise = null;
-            handle.recycle(this);
-        }
-    }
 
     private static final class Tasks {
         private final AbstractChannelHandlerContext next;
@@ -1106,18 +606,6 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
             @Override
             public void run() {
                 next.invokeRead();
-            }
-        };
-        private final Runnable invokeChannelWritableStateChangedTask = new Runnable() {
-            @Override
-            public void run() {
-                next.invokeChannelWritabilityChanged();
-            }
-        };
-        private final Runnable invokeFlushTask = new Runnable() {
-            @Override
-            public void run() {
-                next.invokeFlush();
             }
         };
 
