@@ -35,7 +35,12 @@ public class DefaultSelector {
 
     public synchronized boolean register(SocketChannel channel, int ops) {
         Register register = new Register(channel, ops, this);
-        boolean result = loop.getTasks().offer(register);
+        boolean result = false;
+        if (loop.inEventLoop()) {
+            register.run();
+            result = true;
+        }
+        result = loop.getTasks().offer(register);
 
         if (result) {
             // 唤醒Selector

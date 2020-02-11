@@ -1,8 +1,10 @@
 package io.netx.net;
 
+import java.io.IOException;
 import java.net.SocketAddress;
 
-public interface ChannelOutboundHandler extends Handler{
+public interface ChannelOutboundHandler extends ChannelHandler {
+
     void bind(ChannelHandlerContext ctx, SocketAddress localAddress) throws Exception;
 
     void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress) throws Exception;
@@ -11,5 +13,5 @@ public interface ChannelOutboundHandler extends Handler{
 
     void read(ChannelHandlerContext ctx) throws Exception;
 
-    void write(ChannelHandlerContext ctx, Object msg);
+    void write(ChannelHandlerContext ctx, Object msg) throws IOException;
 }

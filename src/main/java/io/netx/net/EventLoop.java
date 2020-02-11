@@ -8,13 +8,12 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class EventLoop implements Runnable{
 //    private boolean looping;
-//    private long threadId;
+      private long threadId;
 //    private ThreadLocal<EventLoop> loopInThread;
 //    private DefaultSelector selector;
     private final ExecutorService executors;
@@ -62,6 +61,12 @@ public class EventLoop implements Runnable{
         this.selector = new DefaultSelector(this);
         this.serverSocketChannel = serverSocketChannel;
         channelList = new ArrayList<>();
+        executors.execute(new Runnable() {
+            @Override
+            public void run() {
+                threadId = Thread.currentThread().getId();
+            }
+        });
     }
 
     public boolean addChannel(SocketChannel channel) {
@@ -108,5 +113,9 @@ public class EventLoop implements Runnable{
         } catch (InterruptedException e) {
             logger.error("Thread was interrupted.");
         }
+    }
+
+    boolean inEventLoop() {
+        return threadId == Thread.currentThread().getId();
     }
 }

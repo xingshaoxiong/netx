@@ -11,7 +11,7 @@ public class DefaultChannel {
     private volatile SocketAddress localAddress;
     private volatile SocketAddress remoteAddress;
     private volatile EventLoop eventLoop;
-    private Handler handler;
+    private ChannelHandler handler;
     private ByteBuffer byteBuffer;
 
     public DefaultChannel(SelectableChannel selectableChannel, EventLoop eventLoop) {

@@ -3,8 +3,14 @@ package io.netx.net;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
+import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.Set;
 
 public class DefaultChannelPipeline implements ChannelPipeline {
 
@@ -27,59 +33,117 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     }
 
     @Override
-    public ChannelPipeline addLast(Handler handler) {
-        return null;
+    public synchronized ChannelPipeline addLast(ChannelHandler handler) {
+        DefaultChannelHandlerContext ctx = new DefaultChannelHandlerContext(channel, eventLoop, this, handler);
+        DefaultChannelHandlerContext temp = tail.prev;
+        temp.next = ctx;
+        ctx.prev = temp;
+        tail.prev = ctx;
+        return this;
     }
 
     @Override
-    public ChannelPipeline remove(Handler handler) {
-        return null;
+    public synchronized ChannelPipeline remove(ChannelHandler handler) {
+        DefaultChannelHandlerContext ctx = head.next;
+        while (ctx.handler() != handler) {
+            ctx = ctx.next;
+        }
+        if (ctx == tail) {
+            return this;
+        }
+        DefaultChannelHandlerContext prevCtx = ctx.prev;
+        DefaultChannelHandlerContext nextCtx = ctx.next;
+        ctx.prev = null;
+        ctx.next = null;
+        prevCtx.next = nextCtx;
+        nextCtx.prev = prevCtx;
+        return this;
     }
 
     @Override
-    public ChannelInboundInvoker fireChannelActive() {
-        return null;
+    public ChannelPipeline fireChannelActive() {
+        boolean result = false;
+        if (eventLoop.inEventLoop()) {
+            head.fireChannelActive();
+        } else {
+            result = eventLoop.getTasks().offer(() -> {
+                head.fireChannelActive();
+            });
+        }
+        //TODO
+        if (result) {
+            return this;
+        } else {
+            return this;
+        }
     }
 
     @Override
-    public ChannelInboundInvoker fireChannelInactive() {
-        return null;
+    public ChannelPipeline fireChannelInactive() {
+        boolean result = false;
+        if (eventLoop.inEventLoop()) {
+            head.fireChannelInactive();
+        } else {
+            result = eventLoop.getTasks().offer(() -> {
+                head.fireChannelInactive();
+            });
+        }
+        //TODO
+        if (result) {
+            return this;
+        } else {
+            return this;
+        }
     }
 
     @Override
-    public ChannelInboundInvoker fireChannelRead(Object msg) {
-        return null;
+    public ChannelPipeline fireChannelRead(Object msg) {
+        boolean result = false;
+        if (eventLoop.inEventLoop()) {
+            head.fireChannelRead(msg);
+        } else {
+            result = eventLoop.getTasks().offer(() -> {
+                head.fireChannelRead(msg);
+            });
+        }
+        //TODO
+        if (result) {
+            return this;
+        } else {
+            return this;
+        }
     }
 
     @Override
     public void bind(SocketAddress localAddress) {
-
+        tail.bind(localAddress);
     }
 
     @Override
     public void connect(SocketAddress remoteAddress, SocketAddress localAddress) {
-
+        tail.connect(remoteAddress, localAddress);
     }
 
     @Override
     public void close() {
-
+        tail.close();
     }
 
     @Override
-    public ChannelOutboundInvoker read() {
-        return null;
+    public ChannelPipeline read() throws ClosedChannelException {
+        tail.read();
+        return this;
     }
 
     @Override
     public void write(Object msg) {
-
+        tail.write(msg);
     }
 
 
     final class TailContext extends DefaultChannelHandlerContext implements ChannelInboundHandler {
         public TailContext(SocketChannel channel, EventLoop eventLoop, ChannelPipeline pipeline) {
-            super(channel, eventLoop, pipeline);
+            super(channel, eventLoop, pipeline, null);
         }
 
 
@@ -102,7 +166,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     final class HeadContext extends DefaultChannelHandlerContext implements ChannelOutboundHandler, ChannelInboundHandler {
 
         public HeadContext(SocketChannel channel, EventLoop eventLoop, ChannelPipeline pipeline) {
-            super(channel, eventLoop, pipeline);
+            super(channel, eventLoop, pipeline, null);
         }
 
 
@@ -128,22 +192,32 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
         @Override
         public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress) throws Exception {
-
+            ctx.getChannel().connect(remoteAddress);
         }
 
         @Override
         public void close(ChannelHandlerContext ctx) throws Exception {
-
+            ctx.getChannel().close();
         }
 
         @Override
         public void read(ChannelHandlerContext ctx) throws Exception {
-
+            Selector selector = eventLoop.getSelector().getSelector();
+            Set<SelectionKey> set = selector.selectedKeys();
+            for (SelectionKey key : set) {
+                if (key.channel() == channel) {
+                    channel.register(selector, key.interestOps() | SelectionKey.OP_READ);
+                }
+            }
         }
 
         @Override
-        public void write(ChannelHandlerContext ctx, Object msg) {
-
+        public void write(ChannelHandlerContext ctx, Object msg) throws IOException {
+            if (msg instanceof ByteBuffer) {
+                channel.write((ByteBuffer) msg);
+            } else {
+                return;
+            }
         }
     }
 }
