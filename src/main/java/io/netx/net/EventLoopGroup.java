@@ -13,6 +13,8 @@ public class EventLoopGroup {
     private final int size;
     private int index = 0;
 
+    Register register;
+
     public int getSize() {
         return size;
     }
@@ -43,5 +45,6 @@ public class EventLoopGroup {
             EventLoop eventLoop = new EventLoop(100, Executors.newSingleThreadExecutor(), null, null);
             children.add(eventLoop);
         }
+
     }
 }

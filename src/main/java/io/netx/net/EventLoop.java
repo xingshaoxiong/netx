@@ -4,10 +4,13 @@ import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.io.IOException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -104,11 +107,36 @@ public class EventLoop implements Runnable{
     public void run() {
         try {
             while (true) {
-                Runnable task = tasks.take();
+                Runnable task = tasks.poll(10, TimeUnit.MICROSECONDS);
                 if (task == CLOSE) {
                     break;
                 }
-                task.run();
+                if (task != null) {
+                    task.run();
+                }
+                Selector selector = getSelector().getSelector();
+                Set<SelectionKey> keySet = selector.selectedKeys();
+                for (SelectionKey key : keySet) {
+                    Object att = key.attachment();
+                    ChannelPipeline pipeline;
+                    if (att instanceof ChannelPipeline) {
+                        pipeline = (ChannelPipeline)att;
+                    } else {
+                        continue;
+                    }
+                    if (key.isReadable()) {
+                        if (inEventLoop()) {
+                            pipeline.fireChannelRead(null);
+                        } else {
+                            tasks.offer(new Runnable() {
+                                @Override
+                                public void run() {
+                                    pipeline.fireChannelRead(null);
+                                }
+                            });
+                        }
+                    }
+                }
             }
         } catch (InterruptedException e) {
             logger.error("Thread was interrupted.");

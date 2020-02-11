@@ -1,5 +1,6 @@
 package io.netx.net;
 
+import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 
@@ -19,17 +20,17 @@ public interface ChannelPipeline extends ChannelInboundInvoker, ChannelOutboundI
     ChannelPipeline fireChannelRead(Object msg);
 
     @Override
-    void bind(SocketAddress localAddress);
+    void bind(SocketAddress localAddress) throws Exception;
 
     @Override
-    void connect(SocketAddress remoteAddress, SocketAddress localAddress);
+    void connect(SocketAddress remoteAddress, SocketAddress localAddress) throws Exception;
 
     @Override
-    void close();
+    void close() throws Exception;
 
     @Override
-    ChannelPipeline read() throws ClosedChannelException;
+    ChannelPipeline read() throws Exception;
 
     @Override
-    void write(Object msg);
+    void write(Object msg) throws IOException;
 }

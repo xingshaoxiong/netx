@@ -11,6 +11,8 @@ import java.util.Set;
 public class DefaultSelector {
     private EventLoop loop;
 
+    private EventLoopGroup loopGroup = null;
+
     private Selector selector;
 
     private List<DefaultChannel> channelList;
@@ -19,6 +21,13 @@ public class DefaultSelector {
         this.loop = loop;
         selector = Selector.open();
         channelList = new ArrayList<>();
+    }
+    public EventLoopGroup getLoopGroup() {
+        return loopGroup;
+    }
+
+    public void setLoopGroup(EventLoopGroup loopGroup) {
+        this.loopGroup = loopGroup;
     }
 
     public EventLoop getLoop() {
@@ -34,7 +43,7 @@ public class DefaultSelector {
     }
 
     public synchronized boolean register(SocketChannel channel, int ops) {
-        Register register = new Register(channel, ops, this);
+        Register register = new Register(channel, ops, loopGroup);
         boolean result = false;
         if (loop.inEventLoop()) {
             register.run();

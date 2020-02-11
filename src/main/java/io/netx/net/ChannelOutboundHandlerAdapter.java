@@ -1,5 +1,6 @@
 package io.netx.net;
 
+import java.io.IOException;
 import java.net.SocketAddress;
 
 public class ChannelOutboundHandlerAdapter implements ChannelOutboundHandler {
@@ -25,7 +26,7 @@ public class ChannelOutboundHandlerAdapter implements ChannelOutboundHandler {
     }
 
     @Override
-    public void write(ChannelHandlerContext ctx, Object msg) {
+    public void write(ChannelHandlerContext ctx, Object msg) throws IOException {
         ctx.write(msg);
     }
 }

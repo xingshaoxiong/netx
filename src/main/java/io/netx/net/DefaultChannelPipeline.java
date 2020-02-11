@@ -115,28 +115,28 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     }
 
     @Override
-    public void bind(SocketAddress localAddress) {
+    public void bind(SocketAddress localAddress) throws Exception {
         tail.bind(localAddress);
     }
 
     @Override
-    public void connect(SocketAddress remoteAddress, SocketAddress localAddress) {
+    public void connect(SocketAddress remoteAddress, SocketAddress localAddress) throws Exception {
         tail.connect(remoteAddress, localAddress);
     }
 
     @Override
-    public void close() {
+    public void close() throws Exception {
         tail.close();
     }
 
     @Override
-    public ChannelPipeline read() throws ClosedChannelException {
+    public ChannelPipeline read() throws Exception {
         tail.read();
         return this;
     }
 
     @Override
-    public void write(Object msg) {
+    public void write(Object msg) throws IOException {
         tail.write(msg);
     }
 

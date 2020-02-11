@@ -7,28 +7,50 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.List;
 
 public class Acceptor implements Runnable {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(Acceptor.class);
     private ServerSocketChannel serverSocketChannel;
+    private EventLoopGroup loopGroup;
     private EventLoop loop;
 
-    public Acceptor(ServerSocketChannel serverSocketChannel, EventLoop loop) {
+    private List<ChannelHandler> handlerList = null;
+
+    public Acceptor(ServerSocketChannel serverSocketChannel, EventLoopGroup loopGroup) {
         this.serverSocketChannel = serverSocketChannel;
-        this.loop = loop;
+        this.loopGroup = loopGroup;
+        this.loop = loopGroup.getBoss();
     }
+
+    public void setHandlerList(List<ChannelHandler> handlerList) {
+        this.handlerList = handlerList;
+    }
+
+    public void start() {
+        if (loop.inEventLoop()) {
+            run();
+        } else {
+            loop.getExecutors().execute(this);
+        }
+    }
+
     @Override
     public void run() {
-        SocketChannel channel = null;
-        try {
-            channel = serverSocketChannel.accept();
-            channel.configureBlocking(false);
-            boolean result = loop.getTasks().offer(new Register(channel, SelectionKey.OP_READ, loop.getSelector()));
-            if (result) {
-                loop.getSelector().getSelector().wakeup();
+        while (true) {
+            SocketChannel channel = null;
+            try {
+                channel = serverSocketChannel.accept();
+                channel.configureBlocking(false);
+                Register register = new Register(channel, SelectionKey.OP_READ, loopGroup);
+                register.setHandlerList(handlerList);
+                boolean result = loop.getTasks().offer(register);
+                if (result) {
+                    loop.getSelector().getSelector().wakeup();
+                }
+            } catch (IOException e) {
+                logger.error("Accept failed");
             }
-        } catch (IOException e) {
-            logger.error("Accept failed");
         }
     }
 }
