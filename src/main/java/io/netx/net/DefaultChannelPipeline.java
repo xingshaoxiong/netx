@@ -30,6 +30,8 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         this.eventLoop = eventLoop;
         head = new HeadContext(channel, eventLoop, this);
         tail = new TailContext(channel, eventLoop, this);
+        head.next = tail;
+        tail.prev = head;
     }
 
     @Override

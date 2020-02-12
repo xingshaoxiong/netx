@@ -107,17 +107,21 @@ public class EventLoop implements Runnable{
     @Override
     public void run() {
         try {
+            logger.info("EventLoop started, Thread: " + Thread.currentThread().toString());
             while (true) {
-                Runnable task = tasks.poll(10, TimeUnit.MICROSECONDS);
+                Runnable task = tasks.poll(3, TimeUnit.SECONDS);
                 if (task == CLOSE) {
                     break;
                 }
                 if (task != null) {
                     task.run();
+                    continue;
                 }
+                logger.info("goto selctor successfully");
                 Selector selector = getSelector().getSelector();
                 Set<SelectionKey> keySet = selector.selectedKeys();
                 for (SelectionKey key : keySet) {
+                    logger.info("find SelectionKey");
                     Object att = key.attachment();
                     ChannelPipeline pipeline;
                     if (att instanceof ChannelPipeline) {
@@ -141,7 +145,7 @@ public class EventLoop implements Runnable{
                     }
                 }
             }
-        } catch (InterruptedException | IOException e) {
+        } catch (Exception e) {
             logger.error("Thread was interrupted.");
         }
     }

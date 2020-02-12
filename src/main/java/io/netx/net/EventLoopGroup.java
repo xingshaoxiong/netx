@@ -38,11 +38,13 @@ public class EventLoopGroup {
         this.boss = boss;
         this.size = size;
         children = new ArrayList<>(size);
+        boss.start();
     }
 
     public void start() throws IOException {
         for (int i = 0; i < size; i++) {
             EventLoop eventLoop = new EventLoop(100, Executors.newSingleThreadExecutor(), null, null);
+            eventLoop.start();
             children.add(eventLoop);
         }
 

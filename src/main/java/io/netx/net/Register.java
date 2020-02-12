@@ -52,6 +52,8 @@ public class Register implements Runnable {
                 pipeline.addLast(handler);
             }
             key.attach(pipeline);
+            pipeline.fireChannelActive();
+            logger.info("pipeline fireChannelActive");
         } catch (ClosedChannelException e) {
             logger.error("Register Failed");
         }

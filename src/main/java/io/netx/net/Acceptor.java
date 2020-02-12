@@ -31,7 +31,8 @@ public class Acceptor implements Runnable {
         if (loop.inEventLoop()) {
             run();
         } else {
-            loop.getExecutors().execute(this);
+//            loop.getExecutors().execute(this);
+            loop.getTasks().offer(this);
         }
     }
 
@@ -41,13 +42,15 @@ public class Acceptor implements Runnable {
             SocketChannel channel = null;
             try {
                 channel = serverSocketChannel.accept();
+                logger.info("new connection: " + channel.toString());
                 channel.configureBlocking(false);
                 Register register = new Register(channel, SelectionKey.OP_READ, loopGroup);
                 register.setHandlerList(handlerList);
-                boolean result = loop.getTasks().offer(register);
-                if (result) {
-                    loop.getSelector().getSelector().wakeup();
-                }
+                register.run();
+//                boolean result = loop.getTasks().offer(register);
+//                if (result) {
+//                    loop.getSelector().getSelector().wakeup();
+//                }
             } catch (IOException e) {
                 logger.error("Accept failed");
             }

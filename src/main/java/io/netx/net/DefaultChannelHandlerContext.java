@@ -46,6 +46,9 @@ public class DefaultChannelHandlerContext implements ChannelHandlerContext {
     @Override
     public ChannelHandlerContext fireChannelActive() {
         final DefaultChannelHandlerContext ctx = findContextInbound();
+        if (ctx == null) {
+            return this;
+        }
         boolean result = true;
         if (eventLoop.inEventLoop()) {
             ((ChannelInboundHandler) ctx.handler).channelActive(ctx);
@@ -109,7 +112,7 @@ public class DefaultChannelHandlerContext implements ChannelHandlerContext {
         DefaultChannelHandlerContext ctx = this;
         do {
             ctx = ctx.next;
-        } while (!ctx.isInbound);
+        } while (ctx!= null && !ctx.isInbound);
         return ctx;
     }
 
