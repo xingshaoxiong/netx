@@ -4,6 +4,7 @@ import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -126,7 +127,9 @@ public class EventLoop implements Runnable{
                     }
                     if (key.isReadable()) {
                         if (inEventLoop()) {
-                            pipeline.fireChannelRead(null);
+                            ByteBuffer buffer = ByteBuffer.allocate(1000);
+                            ((SocketChannel)key.channel()).read(buffer);
+                            pipeline.fireChannelRead(buffer);
                         } else {
                             tasks.offer(new Runnable() {
                                 @Override
@@ -138,7 +141,7 @@ public class EventLoop implements Runnable{
                     }
                 }
             }
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | IOException e) {
             logger.error("Thread was interrupted.");
         }
     }
