@@ -11,12 +11,13 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 public class ServerTest {
 
     @Test
-    public void ServerTest() throws IOException {
+    public void ServerTest() throws IOException, InterruptedException {
         Server server = new Server(2, 8090);
         server.addHandler(new ChannelInBoundHandlerAdapter() {
             @Override
@@ -30,14 +31,28 @@ public class ServerTest {
                 System.out.println(msg.toString());
             }
         });
-        server.start();
-        Socket socket = new Socket();
-        socket.connect(new InetSocketAddress("localhost", 8090));
-        BufferedOutputStream buf = new BufferedOutputStream(socket.getOutputStream());
-        buf.write(26);
-        while(true) {
+        Thread thread = new Thread() {
+            @Override
+            public void run() {
+                try {
+                    server.start();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        thread.start();
 
-        }
+//        SocketChannel channel = new SocketChannel() {
+//        }
+//        Socket socket = new Socket();
+//        socket.connect(new InetSocketAddress("localhost", 8090));
+//        BufferedOutputStream buf = new BufferedOutputStream(socket.getOutputStream());
+//        buf.write(26);
+        Thread.sleep(10000);
+        server.close();
     }
 
 }

@@ -10,6 +10,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -120,8 +121,10 @@ public class EventLoop implements Runnable{
                 logger.info("goto selctor successfully");
                 Selector selector = getSelector().getSelector();
                 Set<SelectionKey> keySet = selector.selectedKeys();
-                for (SelectionKey key : keySet) {
+                Iterator<SelectionKey> it = selector.selectedKeys().iterator();
+                while (it.hasNext()) {
                     logger.info("find SelectionKey");
+                    SelectionKey key = it.next();
                     Object att = key.attachment();
                     ChannelPipeline pipeline;
                     if (att instanceof ChannelPipeline) {
@@ -143,6 +146,7 @@ public class EventLoop implements Runnable{
                             });
                         }
                     }
+                    it.remove();
                 }
             }
         } catch (Exception e) {
