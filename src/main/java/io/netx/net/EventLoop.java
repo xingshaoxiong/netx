@@ -120,7 +120,12 @@ public class EventLoop implements Runnable{
                 }
                 logger.info("goto selctor successfully");
                 Selector selector = getSelector().getSelector();
-                Set<SelectionKey> keySet = selector.selectedKeys();
+                int nums = selector.select(100);
+                if (nums == 0) {
+                    System.out.println("nums == 0");
+                    continue;
+                }
+                Set keySet = selector.selectedKeys();
                 Iterator<SelectionKey> it = selector.selectedKeys().iterator();
                 while (it.hasNext()) {
                     logger.info("find SelectionKey");

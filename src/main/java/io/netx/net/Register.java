@@ -39,7 +39,6 @@ public class Register implements Runnable {
     @Override
     public void run() {
         try {
-            SelectionKey key = channel.register(defaultSelector.getSelector(), ops);
             int index = eventLoopGroup.getIndex();
             int size = eventLoopGroup.getSize();
             if (index <= size) {
@@ -51,6 +50,7 @@ public class Register implements Runnable {
             for (ChannelHandler handler : handlerList) {
                 pipeline.addLast(handler);
             }
+            SelectionKey key = channel.register(eventLoop.getSelector().getSelector(), ops);
             key.attach(pipeline);
             pipeline.fireChannelActive();
             logger.info("pipeline fireChannelActive");
