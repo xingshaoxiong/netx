@@ -14,6 +14,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class EventLoop implements Runnable{
@@ -26,6 +27,8 @@ public class EventLoop implements Runnable{
     private ServerSocketChannel serverSocketChannel;
     private List<SocketChannel> channelList;
     private int maxChannels = 100;
+
+    private AtomicBoolean flag;
 
     public DefaultSelector getSelector() {
         return selector;
@@ -53,7 +56,7 @@ public class EventLoop implements Runnable{
 
 
 
-    public EventLoop(int maxtasks, ExecutorService executors, ServerSocketChannel serverSocketChannel, SocketChannel socketChannel) throws IOException {
+    public EventLoop(int maxtasks, ExecutorService executors, AtomicBoolean flag, ServerSocketChannel serverSocketChannel, SocketChannel socketChannel) throws IOException {
 //        looping = false;
 //        threadId = Thread.currentThread().getId();
 //        if (loopInThread.get() != null) {
@@ -63,6 +66,7 @@ public class EventLoop implements Runnable{
 //        }
         this.tasks = new ArrayBlockingQueue<Runnable>(maxtasks);
         this.executors = executors;
+        this.flag = flag;
         this.selector = new DefaultSelector(this);
         this.serverSocketChannel = serverSocketChannel;
         channelList = new ArrayList<>();
@@ -72,6 +76,10 @@ public class EventLoop implements Runnable{
                 threadId = Thread.currentThread().getId();
             }
         });
+    }
+
+    public AtomicBoolean getFlag() {
+        return flag;
     }
 
     public boolean addChannel(SocketChannel channel) {
@@ -109,7 +117,7 @@ public class EventLoop implements Runnable{
     public void run() {
         try {
             logger.info("EventLoop started, Thread: " + Thread.currentThread().toString());
-            while (true) {
+            while (flag.get()) {
                 Runnable task = tasks.poll(3, TimeUnit.SECONDS);
                 if (task == CLOSE) {
                     break;
@@ -120,7 +128,7 @@ public class EventLoop implements Runnable{
                 }
                 logger.info("goto selctor successfully");
                 Selector selector = getSelector().getSelector();
-                int nums = selector.select(100);
+                int nums = selector.select(2);
                 if (nums == 0) {
                     System.out.println("nums == 0");
                     continue;

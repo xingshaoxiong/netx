@@ -53,6 +53,7 @@ public class Register implements Runnable {
             SelectionKey key = channel.register(eventLoop.getSelector().getSelector(), ops);
             key.attach(pipeline);
             pipeline.fireChannelActive();
+            eventLoop.getSelector().getSelector().wakeup();
             logger.info("pipeline fireChannelActive");
         } catch (ClosedChannelException e) {
             logger.error("Register Failed");

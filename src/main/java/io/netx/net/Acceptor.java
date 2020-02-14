@@ -38,7 +38,7 @@ public class Acceptor implements Runnable {
 
     @Override
     public void run() {
-        while (true) {
+        while (loop.getFlag().get()) {
             SocketChannel channel = null;
             try {
                 channel = serverSocketChannel.accept();

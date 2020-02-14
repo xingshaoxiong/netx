@@ -36,20 +36,21 @@ public class ServerTest {
                 System.out.println(msg0);
             }
         });
-        Thread thread = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    server.start();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        };
-        thread.start();
-        Thread.sleep(100000000);
+//        Thread thread = new Thread() {
+//            @Override
+//            public void run() {
+//                try {
+//                    server.start();
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        };
+//        thread.start();
+        server.start();
+        Thread.sleep(100000);
 //        Socket socket = new Socket();
 //        socket.connect(new InetSocketAddress("localhost", 8090));
 //        BufferedOutputStream buf = new BufferedOutputStream(socket.getOutputStream());
@@ -61,6 +62,7 @@ public class ServerTest {
 //        socketChannel.write(buffer);
 //        Thread.sleep(1000000);
 //        server.close();
+        server.close();
     }
 
 }

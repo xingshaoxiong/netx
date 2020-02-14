@@ -16,10 +16,10 @@ public class ClientTest {
         ByteBuffer buffer = ByteBuffer.allocate(1000);
         buffer.put("hello netx".getBytes());
         Thread.sleep(10000);
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 1000; i++) {
             socketChannel.write(buffer);
             System.out.println(socketChannel.validOps());
-            Thread.sleep(13009);
+            Thread.sleep(10);
         }
         Thread.sleep(10000);
         socketChannel.write(buffer);
