@@ -126,9 +126,10 @@ public class EventLoop implements Runnable{
                     task.run();
                     continue;
                 }
-                logger.info("goto selctor successfully");
+//                logger.info("goto selctor successfully");
                 Selector selector = getSelector().getSelector();
-                int nums = selector.select(2);
+//                int nums = selector.select(2);
+                int nums = selector.select();
                 if (nums == 0) {
                     System.out.println("nums == 0");
                     continue;

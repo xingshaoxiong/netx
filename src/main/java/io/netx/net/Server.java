@@ -3,7 +3,9 @@ package io.netx.net;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -66,9 +68,25 @@ public class Server {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        Server server = new Server(10, 9000);
+        Server server = new Server(10, 8090);
+        server.addHandler(new ChannelInBoundHandlerAdapter() {
+            @Override
+            public void channelActive(ChannelHandlerContext ctx) {
+                System.out.println("ChannelActiveTest active");
+                ctx.fireChannelActive();
+            }
+
+            @Override
+            public void channelRead(ChannelHandlerContext ctx, Object msg) {
+                Charset charset = Charset.forName("utf-8");
+                String msg0 = charset.decode((ByteBuffer) msg).toString();
+                System.out.println("直接打印msg ：" + msg.toString());
+                System.out.println(msg0);
+            }
+        });
         server.start();
-        Thread.sleep(10000);
+        Thread.sleep(100000);
         server.close();
+
     }
 }

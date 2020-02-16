@@ -50,6 +50,8 @@ public class Register implements Runnable {
             for (ChannelHandler handler : handlerList) {
                 pipeline.addLast(handler);
             }
+            boolean success = false;
+            eventLoop.getSelector().getSelector().wakeup();
             SelectionKey key = channel.register(eventLoop.getSelector().getSelector(), ops);
             key.attach(pipeline);
             pipeline.fireChannelActive();

@@ -47,6 +47,7 @@ public class Acceptor implements Runnable {
                 Register register = new Register(channel, SelectionKey.OP_READ, loopGroup);
                 register.setHandlerList(handlerList);
                 register.run();
+                logger.info("Register run success");
 //                boolean result = loop.getTasks().offer(register);
 //                if (result) {
 //                    loop.getSelector().getSelector().wakeup();
