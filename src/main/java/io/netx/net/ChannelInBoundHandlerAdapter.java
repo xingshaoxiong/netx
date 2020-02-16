@@ -12,7 +12,7 @@ public class ChannelInBoundHandlerAdapter implements ChannelInboundHandler {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         //对msg进行处理
         ctx.fireChannelRead(msg);
     }

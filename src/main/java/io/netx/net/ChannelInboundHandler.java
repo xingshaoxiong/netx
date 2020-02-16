@@ -5,6 +5,6 @@ public interface ChannelInboundHandler extends ChannelHandler {
 
     void channelInActive(ChannelHandlerContext ctx);
 
-    void channelRead(ChannelHandlerContext ctx, Object msg);
+    void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception;
 
 }
