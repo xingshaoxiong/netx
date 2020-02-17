@@ -92,13 +92,19 @@ public class DefaultChannelHandlerContext implements ChannelHandlerContext {
     }
 
     @Override
-    public ChannelHandlerContext fireChannelRead(Object msg) {
+    public ChannelHandlerContext fireChannelRead(Object msg) throws Exception {
         final DefaultChannelHandlerContext ctx = findContextInbound();
         boolean result = true;
         if (eventLoop.inEventLoop()) {
             ((ChannelInboundHandler) ctx.handler).channelRead(ctx, msg);
         } else {
-            result = eventLoop.getTasks().offer(() -> ((ChannelInboundHandler) ctx.handler).channelRead(ctx, msg));
+            result = eventLoop.getTasks().offer(() -> {
+                try {
+                    ((ChannelInboundHandler) ctx.handler).channelRead(ctx, msg);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
         }
         if (result) {
             return this;

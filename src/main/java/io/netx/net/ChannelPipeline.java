@@ -17,7 +17,7 @@ public interface ChannelPipeline extends ChannelInboundInvoker, ChannelOutboundI
     ChannelPipeline fireChannelInactive();
 
     @Override
-    ChannelPipeline fireChannelRead(Object msg);
+    ChannelPipeline fireChannelRead(Object msg) throws Exception;
 
     @Override
     void bind(SocketAddress localAddress) throws Exception;

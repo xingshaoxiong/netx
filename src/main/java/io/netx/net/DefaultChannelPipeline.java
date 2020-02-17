@@ -99,13 +99,17 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     }
 
     @Override
-    public ChannelPipeline fireChannelRead(Object msg) {
+    public ChannelPipeline fireChannelRead(Object msg) throws Exception {
         boolean result = false;
         if (eventLoop.inEventLoop()) {
             head.fireChannelRead(msg);
         } else {
             result = eventLoop.getTasks().offer(() -> {
-                head.fireChannelRead(msg);
+                try {
+                    head.fireChannelRead(msg);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             });
         }
         //TODO

@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -78,10 +79,23 @@ public class Server {
 
             @Override
             public void channelRead(ChannelHandlerContext ctx, Object msg) {
-                Charset charset = Charset.forName("utf-8");
-                String msg0 = charset.decode((ByteBuffer) msg).toString();
-                System.out.println("直接打印msg ：" + msg.toString());
-                System.out.println(msg0);
+//                Charset charset = Charset.forName("utf-8");
+//                String msg0 = charset.decode((ByteBuffer) msg).toString();
+                if (msg instanceof ByteBuffer) {
+                    ByteBuffer buffer = (ByteBuffer)msg;
+                    if (buffer.position() != 0) {
+                        buffer.flip();
+                    }
+                    int cap = buffer.limit();
+                    System.out.println("position: " + buffer.position());
+                    System.out.println("limit: " + buffer.limit());
+                    byte[] bytes = new byte[cap];
+                    for (int i = 0; i < cap; i++) {
+                        bytes[i] = buffer.get(i);
+                    }
+                    System.out.println("直接打印msg ：" + new String(bytes));
+                }
+//                System.out.println(msg0);
             }
         });
         server.start();

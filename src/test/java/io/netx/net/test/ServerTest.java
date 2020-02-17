@@ -15,6 +15,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
+import java.util.Base64;
 
 public class ServerTest {
 
@@ -63,6 +64,19 @@ public class ServerTest {
 //        Thread.sleep(1000000);
 //        server.close();
         server.close();
+    }
+
+    @Test
+    public void byteTest() {
+        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        buffer.put("Hello netx 2".getBytes());
+        buffer.flip();
+        byte[] bytes = new byte[buffer.limit()];
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] = buffer.get(i);
+        }
+        System.out.println("limit: " + buffer.limit());
+        System.out.println(new String(bytes));
     }
 
 }

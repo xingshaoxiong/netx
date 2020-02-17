@@ -107,6 +107,17 @@ public class EventLoop implements Runnable{
     }
     public void start() {
         executors.execute(this);
+        //下面这种也可以，因为使用了阻塞队列，其实，对于之前的单线程线程池而言，阻塞队列完全是多余的，之所以出现这个情况
+        //是因为一开始没有想好技术方案，随写随改，后续可以对这一部分进行修改。
+        //TODO
+//        Thread thread = new Thread(){
+//            @Override
+//            public void run() {
+//                this.run();
+//            }
+//        };
+//        this.threadId = thread.getId();
+//        thread.start();
     }
 
     public void close() {
@@ -148,14 +159,24 @@ public class EventLoop implements Runnable{
                     }
                     if (key.isReadable()) {
                         if (inEventLoop()) {
-                            ByteBuffer buffer = ByteBuffer.allocate(1000);
+                            ByteBuffer buffer = ByteBuffer.allocate(1024);
                             ((SocketChannel)key.channel()).read(buffer);
+                            System.out.println("Buffer.position: " + buffer.position());
+                            System.out.println("Buffer.limit(): " + buffer.limit());
+                            buffer.flip();
+                            System.out.println("Buffer has fliped");
+                            System.out.println("Buffer.position: " + buffer.position());
+                            System.out.println("Buffer.limit(): " + buffer.limit());
                             pipeline.fireChannelRead(buffer);
                         } else {
                             tasks.offer(new Runnable() {
                                 @Override
                                 public void run() {
-                                    pipeline.fireChannelRead(null);
+                                    try {
+                                        pipeline.fireChannelRead(null);
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
                                 }
                             });
                         }

@@ -13,7 +13,7 @@ public interface ChannelHandlerContext extends ChannelInboundInvoker, ChannelOut
     ChannelHandlerContext fireChannelInactive();
 
     @Override
-    ChannelHandlerContext fireChannelRead(Object msg);
+    ChannelHandlerContext fireChannelRead(Object msg) throws Exception;
 
     @Override
     void bind(SocketAddress localAddress) throws Exception;
