@@ -11,7 +11,7 @@ public class Client {
         SocketChannel socketChannel = SocketChannel.open();
         socketChannel.connect(new InetSocketAddress(InetAddress.getLocalHost(), 8090));
         Thread.sleep(10000);
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 100; i++) {
             ByteBuffer buffer = ByteBuffer.allocate(1000);
             buffer.put(("hello netx" + i).getBytes());
             buffer.flip();

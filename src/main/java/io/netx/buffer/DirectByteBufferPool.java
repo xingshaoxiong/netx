@@ -45,7 +45,7 @@ public class DirectByteBufferPool {
 
     }
 
-    public void free(DirectByteBuffer buffer) {
+    public synchronized void free(DirectByteBuffer buffer) {
         DirectByteBuffer bufferprev = findAddresslastless(buffer.getAddress() + buffer.getSize());
         //放回队列时涉及到合并
         if (bufferprev.getAddress() + bufferprev.getSize() == buffer.getAddress()) {
@@ -87,7 +87,7 @@ public class DirectByteBufferPool {
 
     }
 
-    public DirectByteBuffer allocate(int capacity) {
+    public synchronized DirectByteBuffer allocate(int capacity) {
         int count = capacity / pgsize;
         DirectByteBuffer buffer = findFirstBuffer(count);
         if (buffer == null) {
