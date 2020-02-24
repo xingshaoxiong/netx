@@ -19,6 +19,7 @@ public class Client {
             System.out.println(socketChannel.validOps());
             Thread.sleep(10000);
         }
+        socketChannel.close();
         Thread.sleep(10000);
     }
 }
