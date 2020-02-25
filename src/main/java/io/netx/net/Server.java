@@ -1,5 +1,9 @@
 package io.netx.net;
 
+import io.netx.concurrent.ChannelFuture;
+import io.netx.concurrent.ChannelFutureListener;
+import io.netx.concurrent.DefaultChannelFuture;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -17,7 +21,7 @@ public class Server {
     ServerSocketChannel serverSocketChannel;
     List<ChannelHandler> handlerList;
     private int port = 8090;
-    AtomicBoolean flag = new AtomicBoolean(false);
+    AtomicBoolean flag = new AtomicBoolean(true);
     public Server(int size, int port) throws IOException {
         this.size = size;
         this.port = port;
@@ -50,7 +54,7 @@ public class Server {
 //        loopGroup.getBoss().getExecutors().shutdown();
     }
 
-    public synchronized void close() throws IOException {
+    public synchronized void close() throws IOException, InterruptedException {
         flag.compareAndSet(true, false);
 //        notify();
         loopGroup.getBoss().getExecutors().shutdown();
@@ -60,7 +64,10 @@ public class Server {
 //
 //            }
             eventLoop.getExecutors().shutdown();
+            eventLoop.getSelector().getSelector().wakeup();
         }
+        //Debug
+        Thread.sleep(10000);
         serverSocketChannel.close();
     }
 
@@ -98,8 +105,29 @@ public class Server {
 //                System.out.println(msg0);
             }
         });
+        server.addHandler(new ChannelOutboundHandlerAdapter() {
+            @Override
+            public ChannelFuture<Void> closeAsyc(ChannelHandlerContext ctx, ChannelFuture<Void> future) throws Exception {
+//                DefaultChannelFuture<Void> future0 = new DefaultChannelFuture<Void>(){
+//                    @Override
+//                    public Void call() throws Exception {
+//                        ctx.closeAsyc(this);
+//                        return null;
+//                    }
+//                };
+//                future = future0;
+//                future.addListener(new ChannelFutureListener<Void>() {
+//                    @Override
+//                    public void operationComplete(ChannelFuture<Void> future) throws Exception {
+//                        System.out.println("Server Close asyc");
+//                    }
+//                });
+//                return future;
+                return ctx.closeAsyc(future);
+            }
+        });
         server.start();
-        Thread.sleep(100000);
+        Thread.sleep(60000);
         server.close();
 
     }

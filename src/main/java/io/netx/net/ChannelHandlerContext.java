@@ -1,5 +1,7 @@
 package io.netx.net;
 
+import io.netx.concurrent.ChannelFuture;
+
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -37,4 +39,6 @@ public interface ChannelHandlerContext extends ChannelInboundInvoker, ChannelOut
     ChannelPipeline getPipeline();
 
     ChannelHandler handler();
+
+    ChannelFuture<Void> closeAsyc(ChannelFuture<Void> future) throws Exception;
 }

@@ -2,13 +2,11 @@ package io.netx.net;
 
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
+import io.netx.concurrent.DefaultChannelFuture;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -17,17 +15,19 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class EventLoop implements Runnable{
-//    private boolean looping;
-      private long threadId;
-//    private ThreadLocal<EventLoop> loopInThread;
+public class EventLoop implements Runnable {
+    //    private boolean looping;
+    private long threadId;
+    //    private ThreadLocal<EventLoop> loopInThread;
 //    private DefaultSelector selector;
     private final ExecutorService executors;
     private final DefaultSelector selector;
     private ServerSocketChannel serverSocketChannel;
     private List<SocketChannel> channelList;
+    private List<ChannelPipeline> pipelineList;
     private int maxChannels = 100;
     private Thread thread;
+    private boolean doingTasks;
 
     private AtomicBoolean flag;
 
@@ -45,7 +45,8 @@ public class EventLoop implements Runnable{
 
     private BlockingQueue<Runnable> tasks;
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(EventLoop.class);
-    private static final Runnable CLOSE = () -> {};
+    private static final Runnable CLOSE = () -> {
+    };
 
     public ServerSocketChannel getServerSocketChannel() {
         return serverSocketChannel;
@@ -54,7 +55,6 @@ public class EventLoop implements Runnable{
     public void setServerSocketChannel(ServerSocketChannel serverSocketChannel) {
         this.serverSocketChannel = serverSocketChannel;
     }
-
 
 
     public EventLoop(int maxtasks, ExecutorService executors, AtomicBoolean flag, ServerSocketChannel serverSocketChannel, SocketChannel socketChannel) throws IOException {
@@ -71,6 +71,7 @@ public class EventLoop implements Runnable{
         this.selector = new DefaultSelector(this);
         this.serverSocketChannel = serverSocketChannel;
         channelList = new ArrayList<>();
+        pipelineList = new ArrayList<>();
         executors.execute(new Runnable() {
             @Override
             public void run() {
@@ -99,6 +100,14 @@ public class EventLoop implements Runnable{
         }
     }
 
+    public boolean addPipeline(ChannelPipeline pipeline) {
+        if (channelList.size() < maxChannels) {
+            return pipelineList.add(pipeline);
+        } else {
+            return false;
+        }
+    }
+
 //    boolean isInLoopThread() {
 //        return threadId == Thread.currentThread().getId();
 //    }
@@ -112,8 +121,13 @@ public class EventLoop implements Runnable{
 //    }
 
     public boolean submit(Runnable task) {
-        return tasks.offer(task);
+        boolean res = tasks.offer(task);
+        if (!inEventLoop() || doingTasks) {
+            selector.getSelector().wakeup();
+        }
+        return res;
     }
+
     public void start() {
 //        executors.execute(this);
         //下面这种也可以，因为使用了阻塞队列，其实，对于之前的单线程线程池而言，阻塞队列完全是多余的，之所以出现这个情况
@@ -126,29 +140,15 @@ public class EventLoop implements Runnable{
     }
 
     public void close() {
-        tasks.add(CLOSE);
+        submit(CLOSE);
     }
 
     @Override
     public void run() {
         try {
             logger.info("EventLoop started, Thread: " + Thread.currentThread().toString());
+            boolean closeTask = false;
             while (flag.get()) {
-                while(tasks.size() > 0) {
-                    Runnable task = tasks.poll(3, TimeUnit.SECONDS);
-                    if (task == CLOSE) {
-                        break;
-                    }
-                    if (task != null) {
-                        try {
-                            task.run();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            flag.compareAndSet(true, false);
-                            break;
-                        }
-                    }
-                }
                 if (!flag.get()) {
                     break;
                 }
@@ -167,7 +167,7 @@ public class EventLoop implements Runnable{
                     Object att = key.attachment();
                     ChannelPipeline pipeline;
                     if (att instanceof ChannelPipeline) {
-                        pipeline = (ChannelPipeline)att;
+                        pipeline = (ChannelPipeline) att;
                     } else {
                         continue;
                     }
@@ -175,7 +175,7 @@ public class EventLoop implements Runnable{
                         if (inEventLoop()) {
                             logger.info("Has goto inEventLoop()");
                             ByteBuffer buffer = ByteBuffer.allocate(1024);
-                            ((SocketChannel)key.channel()).read(buffer);
+                            ((SocketChannel) key.channel()).read(buffer);
                             System.out.println("Buffer.position: " + buffer.position());
                             System.out.println("Buffer.limit(): " + buffer.limit());
                             buffer.flip();
@@ -184,10 +184,10 @@ public class EventLoop implements Runnable{
                             System.out.println("Buffer.limit(): " + buffer.limit());
                             pipeline.fireChannelRead(buffer);
                         } else {
-                            tasks.offer(() -> {
+                            submit(() -> {
                                 try {
                                     ByteBuffer buffer = ByteBuffer.allocate(1024);
-                                    ((SocketChannel)key.channel()).read(buffer);
+                                    ((SocketChannel) key.channel()).read(buffer);
                                     System.out.println("Buffer.position: " + buffer.position());
                                     System.out.println("Buffer.limit(): " + buffer.limit());
                                     buffer.flip();
@@ -204,8 +204,42 @@ public class EventLoop implements Runnable{
                     }
                     it.remove();
                 }
+                if (tasks.size() == 0) {
+                    continue;
+                }
+                BlockingQueue<Runnable> taskstemp = new ArrayBlockingQueue<>(100, false, tasks);
+                tasks.clear();
+                doingTasks = true;
+                while (taskstemp.size() > 0) {
+                    Runnable task = taskstemp.poll(3, TimeUnit.SECONDS);
+                    if (task == CLOSE) {
+                        closeTask = true;
+                        break;
+                    }
+                    if (task != null) {
+                        try {
+                            task.run();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            flag.compareAndSet(true, false);
+                            break;
+                        }
+                    }
+                }
+                doingTasks = false;
+                if (closeTask) {
+                    break;
+                }
+            }
+            for (ChannelPipeline pipeline : pipelineList) {
+                logger.info("goto pipelineList");
+                if (pipeline instanceof DefaultChannelPipeline) {
+                    DefaultChannelPipeline defaultChannelPipeline = (DefaultChannelPipeline)pipeline;
+                    defaultChannelPipeline.closeAsyc(new DefaultChannelFuture<Void>());
+                }
             }
         } catch (Exception e) {
+            logger.info(e.toString());
             logger.error("Thread was interrupted.");
         }
     }

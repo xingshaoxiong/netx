@@ -2,11 +2,13 @@ package io.netx.net;
 
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
+import io.netx.concurrent.ChannelFuture;
+import io.netx.concurrent.ChannelFutureListener;
+import io.netx.concurrent.DefaultChannelFuture;
 
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -225,5 +227,52 @@ public class DefaultChannelPipeline implements ChannelPipeline {
                 return;
             }
         }
+
+        @Override
+        public ChannelFuture<Void> closeAsyc(ChannelHandlerContext ctx, ChannelFuture<Void> future) throws Exception {
+//            future = new DefaultChannelFuture<Void>(ctx.getEventLoop()){
+//                @Override
+//                public Void call() throws Exception {
+//                    ctx.getChannel().close();
+//                    return null;
+//                }
+//            };
+//            if (future instanceof DefaultChannelFuture) {
+//                DefaultChannelFuture<Void> defaultChannelFuture = (DefaultChannelFuture<Void>)future;
+//                new Thread(defaultChannelFuture).start();
+//            }
+//            return future;
+            logger.info("调用到了closeAsyc");
+            DefaultChannelFuture<Void> future0 = new DefaultChannelFuture<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    ctx.getChannel().close();
+                    return null;
+                }
+            };
+            future = future0;
+            future.addListener(new ChannelFutureListener<Void>() {
+                @Override
+                public void operationComplete(ChannelFuture<Void> future) throws Exception {
+                    System.out.println("Server Close asyc");
+                }
+            });
+            logger.info("future init");
+            logger.info(ctx.getChannel().toString());
+            ((DefaultChannelFuture)future).run();
+//            if (eventLoop.inEventLoop()) {
+//                ((DefaultChannelFuture)future).run();
+//            } else {
+//                eventLoop.submit((DefaultChannelFuture)future);
+//            }
+//            new Thread((DefaultChannelFuture)future).start();
+            logger.info("thread start");
+            return future;
+        }
+    }
+
+    ChannelFuture<Void> closeAsyc(ChannelFuture<Void> future) throws Exception {
+        logger.info("goto tail.closeAsyc()");
+        return tail.closeAsyc(future);
     }
 }

@@ -1,5 +1,7 @@
 package io.netx.net;
 
+import io.netx.concurrent.ChannelFuture;
+
 import java.io.IOException;
 import java.net.SocketAddress;
 
@@ -14,4 +16,6 @@ public interface ChannelOutboundHandler extends ChannelHandler {
     void read(ChannelHandlerContext ctx) throws Exception;
 
     void write(ChannelHandlerContext ctx, Object msg) throws IOException;
+
+    ChannelFuture<Void> closeAsyc(ChannelHandlerContext ctx, ChannelFuture<Void> future) throws Exception;
 }

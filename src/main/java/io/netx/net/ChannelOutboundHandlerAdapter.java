@@ -1,5 +1,8 @@
 package io.netx.net;
 
+import io.netx.concurrent.ChannelFuture;
+import io.netx.concurrent.DefaultChannelFuture;
+
 import java.io.IOException;
 import java.net.SocketAddress;
 
@@ -28,5 +31,12 @@ public class ChannelOutboundHandlerAdapter implements ChannelOutboundHandler {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg) throws IOException {
         ctx.write(msg);
+    }
+    //测试写的ChannelFuture
+
+    @Override
+    public ChannelFuture<Void> closeAsyc(ChannelHandlerContext ctx, ChannelFuture<Void> future) throws Exception {
+        ctx.closeAsyc(future);
+        return future;
     }
 }

@@ -2,6 +2,7 @@ package io.netx.net;
 
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
+import io.netx.concurrent.ChannelFuture;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -193,6 +194,7 @@ public class DefaultChannelHandlerContext implements ChannelHandlerContext {
         }
     }
 
+
     @Override
     public ChannelHandlerContext read() throws Exception {
         final DefaultChannelHandlerContext ctx = findContextOutbound();
@@ -258,5 +260,38 @@ public class DefaultChannelHandlerContext implements ChannelHandlerContext {
     @Override
     public ChannelHandler handler() {
         return handler;
+    }
+
+    @Override
+    public ChannelFuture<Void> closeAsyc(ChannelFuture<Void> future) throws Exception {
+        final DefaultChannelHandlerContext ctx = findContextOutbound();
+        logger.info(ctx.toString());
+        if (ctx instanceof DefaultChannelPipeline.HeadContext) {
+            if (eventLoop.inEventLoop()) {
+                ((DefaultChannelPipeline.HeadContext)ctx).closeAsyc(ctx, future);
+            } else {
+                eventLoop.getTasks().offer(() -> {
+                    try {
+                        ((DefaultChannelPipeline.HeadContext) ctx).closeAsyc(ctx, future);
+                    } catch (Exception e) {
+                        logger.error("close failed");
+                    }
+                });
+            }
+            return future;
+        }
+        boolean result = true;
+        if (eventLoop.inEventLoop()) {
+            ((ChannelOutboundHandler) ctx.handler()).closeAsyc(ctx, future);
+        } else {
+            eventLoop.getTasks().offer(() -> {
+                try {
+                    ((ChannelOutboundHandler) ctx.handler()).closeAsyc(ctx, future);
+                } catch (Exception e) {
+                    logger.error("close failed");
+                }
+            });
+        }
+        return null;
     }
 }
