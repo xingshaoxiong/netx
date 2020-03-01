@@ -38,6 +38,7 @@ public class EventLoopGroup {
         if (boss == null) {
             boss = new EventLoop(100,Executors.newSingleThreadExecutor(), flag, null, null);
         }
+//        boss.doStartThread();
         this.boss = boss;
         this.size = size;
         children = new ArrayList<>(size);

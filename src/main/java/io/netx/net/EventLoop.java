@@ -31,6 +31,8 @@ public class EventLoop implements Runnable {
 
     private AtomicBoolean flag;
 
+    private volatile boolean startThread = false;
+
     public DefaultSelector getSelector() {
         return selector;
     }
@@ -65,6 +67,7 @@ public class EventLoop implements Runnable {
 //        } else {
 //            loopInThread.set(this);
 //        }
+
         this.tasks = new ArrayBlockingQueue<Runnable>(maxtasks);
         this.executors = executors;
         this.flag = flag;
@@ -108,6 +111,22 @@ public class EventLoop implements Runnable {
         }
     }
 
+    public boolean isStartThread() {
+        return startThread;
+    }
+
+    public void setStartThread(boolean startThread) {
+        this.startThread = startThread;
+    }
+
+    public void doStartThread() {
+        thread.start();
+        startThread = true;
+    }
+
+    public Thread getThread() {
+        return thread;
+    }
 //    boolean isInLoopThread() {
 //        return threadId == Thread.currentThread().getId();
 //    }
@@ -135,7 +154,7 @@ public class EventLoop implements Runnable {
         //TODO
         Thread thread = new Thread(this);
         this.threadId = thread.getId();
-        thread.start();
+//        thread.start();
         this.thread = thread;
     }
 
@@ -148,6 +167,9 @@ public class EventLoop implements Runnable {
         try {
             logger.info("EventLoop started, Thread: " + Thread.currentThread().toString());
             boolean closeTask = false;
+//            while (!startTask) {
+////                wait();
+//            }
             while (flag.get()) {
                 if (!flag.get()) {
                     break;

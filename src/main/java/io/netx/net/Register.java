@@ -45,6 +45,15 @@ public class Register implements Runnable {
                 index = 0;
             }
             EventLoop eventLoop = eventLoopGroup.children.get(index);
+            //目前accept单线程，这个没有必要，不会出现竞争，但如果accept是线程池，是有必要的
+            if (!eventLoop.isStartThread()) {
+                synchronized (eventLoop) {
+                    if (!eventLoop.isStartThread()) {
+                        eventLoop.doStartThread();
+//                        eventLoop.notify();
+                    }
+                }
+            }
             eventLoop.addChannel(channel);
             ChannelPipeline pipeline = new DefaultChannelPipeline(channel, eventLoop);
             for (ChannelHandler handler : handlerList) {
