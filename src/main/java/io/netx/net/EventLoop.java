@@ -197,7 +197,18 @@ public class EventLoop implements Runnable {
                         if (inEventLoop()) {
                             logger.info("Has goto inEventLoop()");
                             ByteBuffer buffer = ByteBuffer.allocate(1024);
-                            ((SocketChannel) key.channel()).read(buffer);
+                            int num = ((SocketChannel) key.channel()).read(buffer);
+                            if (num == -1) {
+                                submit(() -> {
+                                    try {
+                                        key.channel().close();
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                });
+                                it.remove();
+                                continue;
+                            }
                             System.out.println("Buffer.position: " + buffer.position());
                             System.out.println("Buffer.limit(): " + buffer.limit());
                             buffer.flip();
@@ -209,7 +220,11 @@ public class EventLoop implements Runnable {
                             submit(() -> {
                                 try {
                                     ByteBuffer buffer = ByteBuffer.allocate(1024);
-                                    ((SocketChannel) key.channel()).read(buffer);
+                                    int num = ((SocketChannel) key.channel()).read(buffer);
+                                    if (num == -1) {
+                                        key.channel().close();
+                                        it.remove();
+                                    }
                                     System.out.println("Buffer.position: " + buffer.position());
                                     System.out.println("Buffer.limit(): " + buffer.limit());
                                     buffer.flip();
@@ -256,7 +271,7 @@ public class EventLoop implements Runnable {
             for (ChannelPipeline pipeline : pipelineList) {
                 logger.info("goto pipelineList");
                 if (pipeline instanceof DefaultChannelPipeline) {
-                    DefaultChannelPipeline defaultChannelPipeline = (DefaultChannelPipeline)pipeline;
+                    DefaultChannelPipeline defaultChannelPipeline = (DefaultChannelPipeline) pipeline;
                     defaultChannelPipeline.closeAsyc(new DefaultChannelFuture<Void>());
                 }
             }

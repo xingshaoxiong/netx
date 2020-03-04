@@ -273,6 +273,21 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
     ChannelFuture<Void> closeAsyc(ChannelFuture<Void> future) throws Exception {
         logger.info("goto tail.closeAsyc()");
-        return tail.closeAsyc(future);
+        logger.info("调用到了closeAsyc");
+        DefaultChannelFuture<Void> future0 = new DefaultChannelFuture<Void>() {
+            @Override
+            public Void call() throws Exception {
+                close();
+                return null;
+            }
+        };
+        future = future0;
+        future.addListener(new ChannelFutureListener<Void>() {
+            @Override
+            public void operationComplete(ChannelFuture<Void> future) throws Exception {
+                System.out.println("Server Close asyc");
+            }
+        });
+        return future;
     }
 }
