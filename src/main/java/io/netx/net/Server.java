@@ -94,8 +94,8 @@ public class Server {
                         buffer.flip();
                     }
                     int cap = buffer.limit();
-                    System.out.println("position: " + buffer.position());
-                    System.out.println("limit: " + buffer.limit());
+//                    System.out.println("position: " + buffer.position());
+//                    System.out.println("limit: " + buffer.limit());
                     byte[] bytes = new byte[cap];
                     for (int i = 0; i < cap; i++) {
                         bytes[i] = buffer.get(i);
@@ -127,7 +127,7 @@ public class Server {
             }
         });
         server.start();
-        Thread.sleep(60000);
+        Thread.sleep(6000000);
         server.close();
 
     }

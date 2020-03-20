@@ -38,21 +38,30 @@ public class Acceptor implements Runnable {
 
     @Override
     public void run() {
+        try {
+            serverSocketChannel.configureBlocking(false);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         while (loop.getFlag().get()) {
             SocketChannel channel = null;
             try {
                 channel = serverSocketChannel.accept();
-                logger.info("new connection: " + channel.toString());
-                channel.configureBlocking(false);
-                Register register = new Register(channel, SelectionKey.OP_READ, loopGroup);
-                register.setHandlerList(handlerList);
-                register.run();
-                logger.info("Register run success");
-//                boolean result = loop.getTasks().offer(register);
-//                if (result) {
-//                    loop.getSelector().getSelector().wakeup();
-//                }
-            } catch (IOException e) {
+                Thread.sleep(10);
+                if (channel != null) {
+                    logger.info("new connection: " + channel.toString());
+                    channel.configureBlocking(false);
+                    Register register = new Register(channel, SelectionKey.OP_READ, loopGroup);
+                    register.setHandlerList(handlerList);
+                    register.run();
+//                    logger.info("Register run success");
+//                    boolean result = loop.getTasks().offer(register);
+//                    if (result) {
+//                        loop.getSelector().getSelector().wakeup();
+//                    }
+                }
+
+            } catch (IOException | InterruptedException e) {
                 logger.error("Accept failed");
             }
         }

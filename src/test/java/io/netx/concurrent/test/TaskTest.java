@@ -22,12 +22,56 @@ public class TaskTest {
                         System.out.println("任务1调用任务2");
                     }
                 });
+
             }
         });
         ExecutorService executors = Executors.newSingleThreadExecutor();
         while (true) {
             Runnable task = tasks.poll();
             executors.execute(task);
+        }
+    }
+
+    public synchronized  void test() {
+        System.out.println("synchronized test");
+    }
+
+    public static void main(String[] args) {
+        BlockingQueue<Runnable> tasks = new ArrayBlockingQueue<>(100);
+        TaskTest t = new TaskTest();
+        tasks.offer(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("执行任务1");
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                t.test();
+                tasks.offer(new Runnable() {
+                    @Override
+                    public void run() {
+                        System.out.println("任务1调用任务2");
+                        t.test();
+                    }
+                });
+            }
+        });
+        tasks.offer(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("死锁检测");
+            }
+        });
+        ExecutorService executors = Executors.newSingleThreadExecutor();
+        while (true) {
+            Runnable task = tasks.poll();
+            if (task != null) {
+                executors.execute(task);
+            }
+
+
         }
     }
 }

@@ -178,10 +178,10 @@ public class EventLoop implements Runnable {
                 Selector selector = getSelector().getSelector();
 //                int nums = selector.select(2);
                 int nums = selector.select();
-                if (nums == 0) {
-                    System.out.println("nums == 0");
-                    continue;
-                }
+//                if (nums == 0) {
+//                    System.out.println("nums == 0");
+//                    continue;
+//                }
                 Set keySet = selector.selectedKeys();
                 Iterator<SelectionKey> it = selector.selectedKeys().iterator();
                 while (it.hasNext()) {
@@ -195,7 +195,7 @@ public class EventLoop implements Runnable {
                     }
                     if (key.isReadable()) {
                         if (inEventLoop()) {
-                            logger.info("Has goto inEventLoop()");
+//                            logger.info("Has goto inEventLoop()");
                             ByteBuffer buffer = ByteBuffer.allocate(1024);
                             int num = ((SocketChannel) key.channel()).read(buffer);
                             if (num == -1) {
@@ -209,12 +209,12 @@ public class EventLoop implements Runnable {
                                 it.remove();
                                 continue;
                             }
-                            System.out.println("Buffer.position: " + buffer.position());
-                            System.out.println("Buffer.limit(): " + buffer.limit());
+//                            System.out.println("Buffer.position: " + buffer.position());
+//                            System.out.println("Buffer.limit(): " + buffer.limit());
                             buffer.flip();
-                            System.out.println("Buffer has fliped");
-                            System.out.println("Buffer.position: " + buffer.position());
-                            System.out.println("Buffer.limit(): " + buffer.limit());
+//                            System.out.println("Buffer has fliped");
+//                            System.out.println("Buffer.position: " + buffer.position());
+//                            System.out.println("Buffer.limit(): " + buffer.limit());
                             pipeline.fireChannelRead(buffer);
                         } else {
                             submit(() -> {
