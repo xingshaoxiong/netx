@@ -80,7 +80,7 @@ public class Server {
         server.addHandler(new ChannelInBoundHandlerAdapter() {
             @Override
             public void channelActive(ChannelHandlerContext ctx) {
-                System.out.println("ChannelActiveTest active");
+//                System.out.println("ChannelActiveTest active");
                 ctx.fireChannelActive();
             }
 

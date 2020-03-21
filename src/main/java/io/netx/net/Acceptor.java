@@ -53,12 +53,13 @@ public class Acceptor implements Runnable {
             final SocketChannel channel;
             try {
                 channel = serverSocketChannel.accept();
-                Thread.sleep(10);
+                //为了验证之前连接失败的原因，怀疑是缓冲区用完，类似全连接队列大小，验证成功，全连接队列50
+//                Thread.sleep(100000);
                 if (channel != null) {
                     Runnable runnable = new Runnable() {
                         @Override
                         public void run() {
-                            logger.info("new connection: " + channel.toString());
+//                            logger.info("new connection: " + channel.toString());
                             try {
                                 channel.configureBlocking(false);
                             } catch (IOException e) {
@@ -77,7 +78,7 @@ public class Acceptor implements Runnable {
 //                    }
                 }
 
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException e) {
                 logger.error("Accept failed");
             }
         }
