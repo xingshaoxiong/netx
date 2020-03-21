@@ -76,7 +76,7 @@ public class Server {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        Server server = new Server(10, 8090);
+        Server server = new Server(10, 9000);
         server.addHandler(new ChannelInBoundHandlerAdapter() {
             @Override
             public void channelActive(ChannelHandlerContext ctx) {
@@ -101,6 +101,13 @@ public class Server {
                         bytes[i] = buffer.get(i);
                     }
                     System.out.println("直接打印msg ：" + new String(bytes));
+//                    //为了观察垃圾回收
+//                    String s = new String(bytes);
+//                    for (int i = 0; i < 15; i++) {
+//                        s += s;
+//                    }
+//                    s.intern();
+//                    System.out.println("观察垃圾回收 ： " + s);
                 }
 //                System.out.println(msg0);
             }

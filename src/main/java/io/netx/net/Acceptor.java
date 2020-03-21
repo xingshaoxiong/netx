@@ -7,7 +7,10 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Acceptor implements Runnable {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(Acceptor.class);
@@ -15,12 +18,15 @@ public class Acceptor implements Runnable {
     private EventLoopGroup loopGroup;
     private EventLoop loop;
 
+    private ExecutorService executorService;
+
     private List<ChannelHandler> handlerList = null;
 
     public Acceptor(ServerSocketChannel serverSocketChannel, EventLoopGroup loopGroup) {
         this.serverSocketChannel = serverSocketChannel;
         this.loopGroup = loopGroup;
         this.loop = loopGroup.getBoss();
+        executorService = Executors.newFixedThreadPool(10);
     }
 
     public void setHandlerList(List<ChannelHandler> handlerList) {
@@ -44,16 +50,26 @@ public class Acceptor implements Runnable {
             e.printStackTrace();
         }
         while (loop.getFlag().get()) {
-            SocketChannel channel = null;
+            final SocketChannel channel;
             try {
                 channel = serverSocketChannel.accept();
                 Thread.sleep(10);
                 if (channel != null) {
-                    logger.info("new connection: " + channel.toString());
-                    channel.configureBlocking(false);
-                    Register register = new Register(channel, SelectionKey.OP_READ, loopGroup);
-                    register.setHandlerList(handlerList);
-                    register.run();
+                    Runnable runnable = new Runnable() {
+                        @Override
+                        public void run() {
+                            logger.info("new connection: " + channel.toString());
+                            try {
+                                channel.configureBlocking(false);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            Register register = new Register(channel, SelectionKey.OP_READ, loopGroup);
+                            register.setHandlerList(handlerList);
+                            register.run();
+                        }
+                    };
+                    executorService.execute(runnable);
 //                    logger.info("Register run success");
 //                    boolean result = loop.getTasks().offer(register);
 //                    if (result) {

@@ -18,20 +18,23 @@ public class Client {
                 public void run() {
                     try {
                         SocketChannel socketChannel = SocketChannel.open();
-                        socketChannel.connect(new InetSocketAddress(InetAddress.getLocalHost(), (8090)));
+                        socketChannel.configureBlocking(true);
+                        socketChannel.connect(new InetSocketAddress(InetAddress.getLocalHost(), (9000)));
+                        if (!socketChannel.isConnected())
                         Thread.sleep(10000);
                         for (int i = 0; i < 100; i++) {
                             ByteBuffer buffer = ByteBuffer.allocate(1000);
                             buffer.put(("hello netx" + i + "第" + ktemp + "个").getBytes());
                             buffer.flip();
                             socketChannel.write(buffer);
-                            System.out.println(socketChannel.validOps());
+//                            System.out.println(socketChannel.validOps());
                             Thread.sleep(10000);
                         }
                         socketChannel.close();
                         Thread.sleep(10000);
                     } catch (Exception e) {
                         e.printStackTrace();
+                        System.out.println("第 " + ktemp + " 连接失败");
                     }
                 }
             };
