@@ -222,6 +222,20 @@ public class DefaultChannelHandlerContext implements ChannelHandlerContext {
     public void write(Object msg) throws IOException {
         //TODO
         final DefaultChannelHandlerContext ctx = findContextOutbound();
+        if (ctx instanceof DefaultChannelPipeline.HeadContext) {
+            if (eventLoop.inEventLoop()) {
+                ((DefaultChannelPipeline.HeadContext) ctx).write(ctx, msg);
+            } else {
+                eventLoop.getTasks().offer(() -> {
+                    try {
+                        ((DefaultChannelPipeline.HeadContext) ctx).write(ctx, msg);
+                    } catch (Exception e) {
+                        logger.error("read failed");
+                    }
+                });
+            }
+            return;
+        }
         boolean result = true;
         if (eventLoop.inEventLoop()) {
             ((ChannelOutboundHandler) ctx.handler()).write(ctx, msg);
@@ -264,22 +278,22 @@ public class DefaultChannelHandlerContext implements ChannelHandlerContext {
 
     @Override
     public ChannelFuture<Void> closeAsyc(ChannelFuture<Void> future) throws Exception {
-//        final DefaultChannelHandlerContext ctx = findContextOutbound();
-//        logger.info(ctx.toString());
-//        if (ctx instanceof DefaultChannelPipeline.HeadContext) {
-//            if (eventLoop.inEventLoop()) {
-//                ((DefaultChannelPipeline.HeadContext)ctx).closeAsyc(ctx, future);
-//            } else {
-//                eventLoop.getTasks().offer(() -> {
-//                    try {
-//                        ((DefaultChannelPipeline.HeadContext) ctx).closeAsyc(ctx, future);
-//                    } catch (Exception e) {
-//                        logger.error("close failed");
-//                    }
-//                });
-//            }
-//            return future;
-//        }
+        final DefaultChannelHandlerContext ctx = findContextOutbound();
+        logger.info(ctx.toString());
+        if (ctx instanceof DefaultChannelPipeline.HeadContext) {
+            if (eventLoop.inEventLoop()) {
+                ((DefaultChannelPipeline.HeadContext)ctx).closeAsyc(ctx, future);
+            } else {
+                eventLoop.getTasks().offer(() -> {
+                    try {
+                        ((DefaultChannelPipeline.HeadContext) ctx).closeAsyc(ctx, future);
+                    } catch (Exception e) {
+                        logger.error("close failed");
+                    }
+                });
+            }
+            return future;
+        }
 //        boolean result = true;
 //        if (eventLoop.inEventLoop()) {
 //            ((ChannelOutboundHandler) ctx.handler()).closeAsyc(ctx, future);

@@ -8,10 +8,12 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -22,6 +24,7 @@ public class Server {
     List<ChannelHandler> handlerList;
     private int port = 8090;
     AtomicBoolean flag = new AtomicBoolean(true);
+
     public Server(int size, int port) throws IOException {
         this.size = size;
         this.port = port;
@@ -29,7 +32,7 @@ public class Server {
         handlerList = new ArrayList<>();
     }
 
-    public  void start() throws IOException, InterruptedException {
+    public void start() throws IOException, InterruptedException {
         loopGroup.start();
         serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.socket().setReuseAddress(true);
@@ -76,7 +79,7 @@ public class Server {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        Server server = new Server(10, 9000);
+        Server server = new Server(30, 9000);
         server.addHandler(new ChannelInBoundHandlerAdapter() {
             @Override
             public void channelActive(ChannelHandlerContext ctx) {
@@ -85,11 +88,11 @@ public class Server {
             }
 
             @Override
-            public void channelRead(ChannelHandlerContext ctx, Object msg) {
+            public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 //                Charset charset = Charset.forName("utf-8");
 //                String msg0 = charset.decode((ByteBuffer) msg).toString();
                 if (msg instanceof ByteBuffer) {
-                    ByteBuffer buffer = (ByteBuffer)msg;
+                    ByteBuffer buffer = (ByteBuffer) msg;
                     if (buffer.position() != 0) {
                         buffer.flip();
                     }
@@ -101,6 +104,20 @@ public class Server {
                         bytes[i] = buffer.get(i);
                     }
                     System.out.println("直接打印msg ：" + new String(bytes));
+                    String s = "HTTP/1.1 200\r\nStatus: 200 OK\r\nContent-Length: 100\r\nConnection: close\r\nContent-Type: text/html; charset=utf-8\r\n\r\n<h1>Test</h1>";
+                    ByteBuffer buffer1 = ByteBuffer.allocate(1000);
+                    buffer1.put(s.getBytes());
+                    buffer1.flip();
+                    ctx.write(buffer1);
+                    buffer1 = null;
+//                    Iterator it = ctx.getEventLoop().getSelector().getSelector().keys().iterator();
+//                    while (it.hasNext()) {
+//                        SelectionKey key = (SelectionKey)it.next();
+//                        if(key.channel() == ctx.getChannel()) {
+//                            key.cancel();
+                            ctx.getChannel().close();
+//                        }
+//                    }
 //                    //为了观察垃圾回收
 //                    String s = new String(bytes);
 //                    for (int i = 0; i < 15; i++) {
@@ -131,6 +148,11 @@ public class Server {
 //                });
 //                return future;
                 return ctx.closeAsyc(future);
+            }
+
+            @Override
+            public void write(ChannelHandlerContext ctx, Object msg) throws IOException {
+                super.write(ctx, msg);
             }
         });
         server.start();

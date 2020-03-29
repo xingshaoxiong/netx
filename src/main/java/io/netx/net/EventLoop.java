@@ -197,25 +197,32 @@ public class EventLoop implements Runnable {
                         if (inEventLoop()) {
 //                            logger.info("Has goto inEventLoop()");
                             ByteBuffer buffer = ByteBuffer.allocate(1024);
-                            int num = ((SocketChannel) key.channel()).read(buffer);
-                            if (num == -1) {
-                                submit(() -> {
-                                    try {
-                                        key.channel().close();
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                    }
-                                });
-                                it.remove();
-                                continue;
-                            }
+                            try{
+                                int num = ((SocketChannel) key.channel()).read(buffer);
+                                if (num == -1) {
+                                    submit(() -> {
+                                        try {
+                                            key.channel().close();
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
+                                        }
+                                    });
+                                    it.remove();
+                                    continue;
+                                }
 //                            System.out.println("Buffer.position: " + buffer.position());
 //                            System.out.println("Buffer.limit(): " + buffer.limit());
-                            buffer.flip();
+                                buffer.flip();
 //                            System.out.println("Buffer has fliped");
 //                            System.out.println("Buffer.position: " + buffer.position());
 //                            System.out.println("Buffer.limit(): " + buffer.limit());
-                            pipeline.fireChannelRead(buffer);
+                                pipeline.fireChannelRead(buffer);
+//                            pipeline.write(buffer);
+                            } catch (Exception e) {
+                                key.cancel();
+                                key.channel().close();
+                            }
+
                         } else {
                             submit(() -> {
                                 try {

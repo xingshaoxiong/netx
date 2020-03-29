@@ -221,11 +221,21 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
         @Override
         public void write(ChannelHandlerContext ctx, Object msg) throws IOException {
-            if (msg instanceof ByteBuffer) {
-                channel.write((ByteBuffer) msg);
-            } else {
-                return;
+            try {
+                if (msg instanceof ByteBuffer) {
+                    channel.write((ByteBuffer) msg);
+                } else {
+                    return;
+                }
+            } catch (IOException e) {
+                for (SelectionKey key :ctx.getEventLoop().getSelector().getSelector().keys() ) {
+                    if (key.channel() == channel) {
+                        key.cancel();
+                        channel.close();
+                    }
+                }
             }
+
         }
 
         @Override
@@ -242,32 +252,31 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 //                new Thread(defaultChannelFuture).start();
 //            }
 //            return future;
-            logger.info("调用到了closeAsyc");
-            DefaultChannelFuture<Void> future0 = new DefaultChannelFuture<Void>() {
-                @Override
-                public Void call() throws Exception {
-                    ctx.getChannel().close();
-                    return null;
-                }
-            };
-            future = future0;
-            future.addListener(new ChannelFutureListener<Void>() {
-                @Override
-                public void operationComplete(ChannelFuture<Void> future) throws Exception {
-                    System.out.println("Server Close asyc");
-                }
-            });
-            logger.info("future init");
-            logger.info(ctx.getChannel().toString());
-            ((DefaultChannelFuture)future).run();
+//            logger.info("调用到了closeAsyc");
+//            DefaultChannelFuture<Void> future0 = new DefaultChannelFuture<Void>() {
+//                @Override
+//                public Void call() throws Exception {
+//                    ctx.getChannel().close();
+//                    return null;
+//                }
+//            };
+//            future = future0;
+//            future.addListener(new ChannelFutureListener<Void>() {
+//                @Override
+//                public void operationComplete(ChannelFuture<Void> future) throws Exception {
+//                    System.out.println("Server Close asyc");
+//                }
+//            });
+//            logger.info("future init");
+//            logger.info(ctx.getChannel().toString());
+//            ((DefaultChannelFuture)future).run();
 //            if (eventLoop.inEventLoop()) {
 //                ((DefaultChannelFuture)future).run();
 //            } else {
 //                eventLoop.submit((DefaultChannelFuture)future);
 //            }
 //            new Thread((DefaultChannelFuture)future).start();
-            logger.info("thread start");
-            return future;
+            return ctx.closeAsyc(future);
         }
     }
 

@@ -26,7 +26,7 @@ public class Acceptor implements Runnable {
         this.serverSocketChannel = serverSocketChannel;
         this.loopGroup = loopGroup;
         this.loop = loopGroup.getBoss();
-        executorService = Executors.newFixedThreadPool(10);
+        executorService = Executors.newFixedThreadPool(20);
     }
 
     public void setHandlerList(List<ChannelHandler> handlerList) {

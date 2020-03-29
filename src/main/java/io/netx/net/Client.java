@@ -10,8 +10,8 @@ import java.util.concurrent.Executors;
 
 public class Client {
     public static void main(String[] args) throws IOException, InterruptedException {
-        ExecutorService executorService = Executors.newFixedThreadPool(3800);
-        for (int k = 0; k < 3800; k++) {
+        ExecutorService executorService = Executors.newFixedThreadPool(2000);
+        for (int k = 0; k < 2000; k++) {
             final int ktemp = k;
             Runnable runnable = new Runnable() {
                 @Override
@@ -32,6 +32,22 @@ public class Client {
 //                            System.out.println(socketChannel.validOps());
 //                            Thread.sleep(10000);
 //                        }
+                        ByteBuffer buffer1 = ByteBuffer.allocate(8);
+                        while (true) {
+                            int num = socketChannel.read(buffer1);
+                            if (num == -1) {
+                                break;
+                            }
+                            buffer1.flip();
+//                            System.out.println(buffer1.position());
+//                            System.out.println(buffer1.limit());
+                            byte[] bytes = new byte[buffer1.limit()];
+                            for (int i = 0; i <bytes.length; i++) {
+                                bytes[i] = buffer1.get(i);
+                            }
+                            System.out.println(new String(bytes));
+                        }
+
                         Thread.sleep(10000);
                         socketChannel.close();
                     } catch (Exception e) {
